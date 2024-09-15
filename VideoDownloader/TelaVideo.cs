@@ -16,11 +16,25 @@ namespace VideoDownloader
         public TelaVideo()
         {
             InitializeComponent();
+            CreateDirEssential();
         }
 
-        private async void btn_baixar_Click(object sender, EventArgs e)
+        private void CreateDirEssential()
+        {
+            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas")))
+            {
+                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas"));
+            }
+            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas")))
+            {
+                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas"));
+            }
+        }
+
+            private async void btn_baixar_Click(object sender, EventArgs e)
         {
             dynamic downloader;
+            Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = value), label_status);
             if (rb_video.Checked)
             {
                 downloader = new Video(text_link.Text);
@@ -38,15 +52,13 @@ namespace VideoDownloader
                     return;
                 }
                 downloader.VerifyVideoOK();
-                await downloader.Download(new Progress<int>(value => bar_progresso.Value = value));
+                await downloader.Download(logger);
                 var resultado = MessageBox.Show("Download concluído! Deseja abrir a pasta onde o arquivo foi baixado?", "Sucesso", MessageBoxButtons.YesNo);
                 if (resultado == DialogResult.Yes)
                 {
                     string arg = "/select, \"" + downloader.arquivo + "\"";
                     System.Diagnostics.Process.Start("explorer.exe", arg);
                 }
-                bar_progresso.Value = 0;
-
             }
             catch (ArgumentException)
             {
@@ -60,6 +72,7 @@ namespace VideoDownloader
             {
                 MessageBox.Show(err.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+            logger.Log(0, "Status: Inativo");
         }
 
         private void btn_voltar_Click(object sender, EventArgs e)

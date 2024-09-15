@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using YoutubeExplode;
 using YoutubeExplode.Videos.Streams;
 using static System.Net.Mime.MediaTypeNames;
@@ -88,24 +89,24 @@ namespace VideoDownloader
             return (videoStreamInfo, audioStreamInfo);
         }
 
-        public async Task Download(IProgress<int> progress)
+        public async Task Download(Logger logger)
         {
-            progress.Report(20);
+            logger.Log(20, "Iniciando download...");
             var video = await youtube.Videos.GetAsync(url);
             var manifest = await youtube.Videos.Streams.GetManifestAsync(url);
             arquivo = ExistFile();
-            progress.Report(40);
+            logger.Log(40, "Verificando se arquivo existe...");
 
             // a verificação de qualidade vai aqui =====================
 
             var (videoStream, audioStream) = GetStreamsHigh(manifest);
             string videoPath = Path.Combine(Path.GetTempPath(), "video.mp4");
             string audioPath = Path.Combine(Path.GetTempPath(), "audio.mp3");
-            progress.Report(60);
+            logger.Log(60, "Baixando stream do video...");
             await youtube.Videos.Streams.DownloadAsync(videoStream, videoPath);
-            progress.Report(70);
+            logger.Log(70, "Baixando stream do audio...");
             await youtube.Videos.Streams.DownloadAsync(audioStream, audioPath);
-            progress.Report(80);
+            logger.Log(80, "Criando processo de união...");
 
             string args = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a aac \"{arquivo}\"";
 
@@ -120,20 +121,20 @@ namespace VideoDownloader
                     CreateNoWindow = true
                 }
             };
-            progress.Report(90);
+            logger.Log(90, "Unindo video e audio...");
             process.Start();
             process.WaitForExit();
 
             // Limpar arquivos temporários
+            logger.Log(95, "Deletando arquivos temporários...");
             File.Delete(videoPath);
             File.Delete(audioPath);
-            progress.Report(95);
 
             if (process.ExitCode != 0)
             {
                 throw new InvalidOperationException("Erro ao mesclar vídeo e áudio.");
             }
-            progress.Report(100);
+            logger.Log(100, "Pronto!");
         }
     }
 }
