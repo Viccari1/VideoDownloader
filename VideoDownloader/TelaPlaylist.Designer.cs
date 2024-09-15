@@ -52,7 +52,7 @@
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(545, 24);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Baixar Videos";
+            this.label1.Text = "Baixar Playlist";
             this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // label2
@@ -60,15 +60,15 @@
             this.label2.AutoSize = true;
             this.label2.Location = new System.Drawing.Point(12, 110);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(75, 13);
+            this.label2.Size = new System.Drawing.Size(80, 13);
             this.label2.TabIndex = 1;
-            this.label2.Text = "Link do Video:";
+            this.label2.Text = "Link da Playlist:";
             // 
             // text_link
             // 
-            this.text_link.Location = new System.Drawing.Point(93, 107);
+            this.text_link.Location = new System.Drawing.Point(98, 107);
             this.text_link.Name = "text_link";
-            this.text_link.Size = new System.Drawing.Size(461, 20);
+            this.text_link.Size = new System.Drawing.Size(456, 20);
             this.text_link.TabIndex = 2;
             // 
             // panel1
@@ -108,11 +108,11 @@
             // rb_audio
             // 
             this.rb_audio.AutoSize = true;
-            this.rb_audio.Location = new System.Drawing.Point(144, 132);
+            this.rb_audio.Location = new System.Drawing.Point(149, 133);
             this.rb_audio.Name = "rb_audio";
-            this.rb_audio.Size = new System.Drawing.Size(52, 17);
+            this.rb_audio.Size = new System.Drawing.Size(57, 17);
             this.rb_audio.TabIndex = 5;
-            this.rb_audio.Text = "Audio";
+            this.rb_audio.Text = "Audios";
             this.rb_audio.UseVisualStyleBackColor = true;
             // 
             // rb_video
@@ -121,10 +121,10 @@
             this.rb_video.Checked = true;
             this.rb_video.Location = new System.Drawing.Point(86, 132);
             this.rb_video.Name = "rb_video";
-            this.rb_video.Size = new System.Drawing.Size(52, 17);
+            this.rb_video.Size = new System.Drawing.Size(57, 17);
             this.rb_video.TabIndex = 6;
             this.rb_video.TabStop = true;
-            this.rb_video.Text = "Video";
+            this.rb_video.Text = "Videos";
             this.rb_video.UseVisualStyleBackColor = true;
             // 
             // btn_baixar
@@ -133,7 +133,7 @@
             this.btn_baixar.Name = "btn_baixar";
             this.btn_baixar.Size = new System.Drawing.Size(542, 54);
             this.btn_baixar.TabIndex = 7;
-            this.btn_baixar.Text = "Baixar video";
+            this.btn_baixar.Text = "Baixar playlist";
             this.btn_baixar.UseVisualStyleBackColor = true;
             this.btn_baixar.Click += new System.EventHandler(this.btn_baixar_Click);
             // 
@@ -167,7 +167,7 @@
             this.btn_voltar.UseVisualStyleBackColor = true;
             this.btn_voltar.Click += new System.EventHandler(this.btn_voltar_Click);
             // 
-            // TelaVideo
+            // TelaPlaylist
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -183,8 +183,8 @@
             this.Controls.Add(this.text_link);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
-            this.Name = "TelaVideo";
-            this.Text = "Baixador de Videos";
+            this.Name = "TelaPlaylist";
+            this.Text = "Baixador de Playlists";
             this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
