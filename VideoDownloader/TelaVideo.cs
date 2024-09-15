@@ -31,7 +31,7 @@ namespace VideoDownloader
             }
         }
 
-            private async void btn_baixar_Click(object sender, EventArgs e)
+        private async void btn_baixar_Click(object sender, EventArgs e)
         {
             dynamic downloader;
             Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = value), label_status);
@@ -51,7 +51,7 @@ namespace VideoDownloader
                     MessageBox.Show(downloader.VerifyVideoOK().Item2, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-                downloader.VerifyVideoOK();
+                // downloader.VerifyVideoOK();
                 await downloader.Download(logger);
                 var resultado = MessageBox.Show("Download concluído! Deseja abrir a pasta onde o arquivo foi baixado?", "Sucesso", MessageBoxButtons.YesNo);
                 if (resultado == DialogResult.Yes)

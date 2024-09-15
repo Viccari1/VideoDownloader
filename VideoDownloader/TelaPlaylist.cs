@@ -31,32 +31,30 @@ namespace VideoDownloader
             }
         }
 
-            private async void btn_baixar_Click(object sender, EventArgs e)
+        private async void btn_baixar_Click(object sender, EventArgs e)
         {
-            dynamic downloader;
+            Playlist downloader = new Playlist(text_link.Text);
             Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = value), label_status);
-            if (rb_video.Checked)
-            {
-                downloader = new Video(text_link.Text);
-            }
-            else
-            {
-                
-                downloader = new Audio(text_link.Text);
-            }
             try
             {
-                if (downloader.VerifyVideoOK().Item1 == false)
+                if (downloader.VerifyPlaylistOK().Item1 == false)
                 {
-                    MessageBox.Show(downloader.VerifyVideoOK().Item2, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(downloader.VerifyPlaylistOK().Item2, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-                downloader.VerifyVideoOK();
-                await downloader.Download(logger);
+                // downloader.VerifyVideoOK();
+                if (rb_video.Checked)
+                {
+                    await downloader.DownloadVideos(logger);
+                }
+                else
+                {
+                    await downloader.DownloadAudios(logger);
+                }
                 var resultado = MessageBox.Show("Download concluído! Deseja abrir a pasta onde o arquivo foi baixado?", "Sucesso", MessageBoxButtons.YesNo);
                 if (resultado == DialogResult.Yes)
                 {
-                    string arg = "/select, \"" + downloader.arquivo + "\"";
+                    string arg = "/select, \"" + downloader.fullDir + "\"";
                     System.Diagnostics.Process.Start("explorer.exe", arg);
                 }
             }

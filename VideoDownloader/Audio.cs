@@ -66,14 +66,14 @@ namespace VideoDownloader
             return manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
         }
 
-        public async Task Download(IProgress<int> progress)
+        public async Task Download(Logger logger)
         {
-            progress.Report(30);
+            logger.Log(30, "Buscando audio...");
             var video = await youtube.Videos.GetAsync(url);
             var manifest = await youtube.Videos.Streams.GetManifestAsync(url);
             arquivo = ExistFile();
             var audioStream = GetStreamAudio(manifest);
-            progress.Report(60);
+            logger.Log(60, "Baixando áudio...");
 
             try
             {
@@ -81,7 +81,7 @@ namespace VideoDownloader
                                          .SetContainer("mp3")
                                          .SetPreset(ConversionPreset.Fast)
                                          .SetFFmpegPath(ffmpegPath));
-                progress.Report(100);
+                logger.Log(100, "Audio baixado!");
             }
             catch (Exception)
             {
