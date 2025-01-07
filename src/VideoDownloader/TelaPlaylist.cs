@@ -13,6 +13,7 @@ namespace VideoDownloader
 {
     public partial class TelaPlaylist : Form
     {
+        private bool emUso = false;
         public TelaPlaylist()
         {
             InitializeComponent();
@@ -33,6 +34,14 @@ namespace VideoDownloader
 
         private async void btn_baixar_Click(object sender, EventArgs e)
         {
+            if (emUso)
+            {
+                MessageBox.Show("O processo ainda não terminou!");
+                return;
+            }
+
+            emUso = true;
+
             Playlist downloader = new Playlist(text_link.Text);
             Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = value), label_status);
             try
@@ -45,6 +54,7 @@ namespace VideoDownloader
                 // downloader.VerifyVideoOK();
                 if (rb_video.Checked)
                 {
+                    downloader.qualidadeAlta = rb_alta.Checked;
                     await downloader.DownloadVideos(logger);
                 }
                 else
@@ -71,6 +81,7 @@ namespace VideoDownloader
                 MessageBox.Show(err.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             logger.Log(0, "Status: Inativo");
+            emUso = false;
         }
 
         private void btn_voltar_Click(object sender, EventArgs e)
@@ -88,6 +99,14 @@ namespace VideoDownloader
         {
             var arg = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas");
             System.Diagnostics.Process.Start("explorer.exe", arg);
+        }
+
+        private void rb_video_CheckedChanged(object sender, EventArgs e)
+        {
+            if (rb_video.Checked)
+                panel3.Visible = true;
+            else
+                panel3.Visible = false;
         }
     }
 }

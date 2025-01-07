@@ -13,6 +13,7 @@ namespace VideoDownloader
 {
     public partial class TelaVideo : Form
     {
+        private bool emUso = false;
         public TelaVideo()
         {
             InitializeComponent();
@@ -33,11 +34,35 @@ namespace VideoDownloader
 
         private async void btn_baixar_Click(object sender, EventArgs e)
         {
+            if (emUso)
+            {
+                MessageBox.Show("O processo ainda não terminou!");
+                return;
+            }
+
+            emUso = true;
+
             dynamic downloader;
             Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = value), label_status);
             if (rb_video.Checked)
             {
                 downloader = new Video(text_link.Text);
+                List<string> qualidades = await downloader.GetQuality();
+                Global.qualidades.Clear();
+
+                for (int i = 0; i < qualidades.Count; i++)
+                {
+                    Global.qualidades.Add(qualidades[i]);
+                }
+                TelaQualidade tela = new TelaQualidade();
+                tela.ShowDialog();
+                if (Global.qualidadeDefinida == null)
+                {
+                    emUso = false;
+                    MessageBox.Show("Selecione uma qualidade!", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                downloader.qualidade = Global.qualidadeDefinida;
             }
             else
             {
@@ -73,6 +98,7 @@ namespace VideoDownloader
                 MessageBox.Show(err.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             logger.Log(0, "Status: Inativo");
+            emUso = false;
         }
 
         private void btn_voltar_Click(object sender, EventArgs e)

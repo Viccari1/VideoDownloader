@@ -20,6 +20,7 @@ namespace VideoDownloader
         public string pasta;
         YoutubeClient youtube;
         string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
+        public bool qualidadeAlta = false;
         public string fullDir;
 
         public Playlist(string url)
@@ -147,7 +148,15 @@ namespace VideoDownloader
                 var videoName = video.Title;
                 var manifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
                 logger.Log(40, "Recebendo stream (" + i + "/" + total + ")...");
-                (var videoStream, var audioStream) = GetStreamsVideoHigh(manifest);
+                IStreamInfo videoStream, audioStream;
+                if (qualidadeAlta)
+                {
+                    (videoStream, audioStream) = GetStreamsVideoHigh(manifest);
+                }
+                else
+                {
+                    (videoStream, audioStream) = GetStreamsVideoLow(manifest);
+                }
                 var fullDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas\\", RemoveInvalidChars(tituloPlaylist));
                 var arquivo = Path.Combine(fullDir, ExistFileVideo(videoName, ".mp4") + ".mp4");
 

@@ -19,6 +19,7 @@ namespace VideoDownloader
         string NOME = "arquivo";
         public string arquivo;
         string url;
+        public string qualidade;
         YoutubeClient youtube;
         string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
 
@@ -69,24 +70,29 @@ namespace VideoDownloader
             }
         }
 
-        private (IStreamInfo, IStreamInfo) GetStreamsHigh(StreamManifest manifest)
+        private (IStreamInfo, IStreamInfo) GetStreams(StreamManifest manifest)
         {
             var audioStreamInfo = manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
             var videoStreamInfo = manifest.GetVideoOnlyStreams()
-                                      .Where(s => s.VideoQuality.Label != "360p")
+                                      .Where(s => s.VideoQuality.Label == qualidade)
                                       .OrderByDescending(s => s.Bitrate)
                                       .FirstOrDefault();
             return (videoStreamInfo, audioStreamInfo);
         }
-
-        private (IStreamInfo, IStreamInfo) GetStreamsLow(StreamManifest manifest)
+        public async Task<List<String>> GetQuality()
         {
-            var audioStreamInfo = manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
-            var videoStreamInfo = manifest.GetVideoOnlyStreams()
-                                      .Where(s => s.VideoQuality.Label == "360p")
-                                      .OrderByDescending(s => s.Bitrate)
-                                      .FirstOrDefault();
-            return (videoStreamInfo, audioStreamInfo);
+            var manifest = await youtube.Videos.Streams.GetManifestAsync(url);
+            var stream = manifest.GetVideoOnlyStreams().ToList();
+            var quality = new List<String>();
+            for (var i = 0; i < stream.Count; i++)
+            {
+                var label = stream[i].VideoQuality.Label;
+                if (quality.Contains(label))
+                    continue;
+
+                quality.Add(label);
+            }
+            return quality;
         }
 
         public async Task Download(Logger logger)
@@ -99,7 +105,7 @@ namespace VideoDownloader
 
             // a verificação de qualidade vai aqui =====================
 
-            var (videoStream, audioStream) = GetStreamsHigh(manifest);
+            var (videoStream, audioStream) = GetStreams(manifest);
             string videoPath = Path.Combine(Path.GetTempPath(), "video.mp4");
             string audioPath = Path.Combine(Path.GetTempPath(), "audio.mp3");
             logger.Log(60, "Baixando stream do video...");

@@ -97,6 +97,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Audio.cs" />
+    <Compile Include="Global.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Playlist.cs" />
     <Compile Include="TelaPlaylist.cs">
@@ -113,6 +114,12 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TelaQualidade.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TelaQualidade.Designer.cs">
+      <DependentUpon>TelaQualidade.cs</DependentUpon>
+    </Compile>
     <Compile Include="TelaVideo.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -134,6 +141,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="TelaPrincipal.resx">
       <DependentUpon>TelaPrincipal.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TelaQualidade.resx">
+      <DependentUpon>TelaQualidade.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="TelaVideo.resx">
       <DependentUpon>TelaVideo.cs</DependentUpon>

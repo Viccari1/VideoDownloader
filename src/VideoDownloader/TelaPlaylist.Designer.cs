@@ -41,7 +41,14 @@
             this.btn_pasta_audio = new System.Windows.Forms.Button();
             this.btn_pasta_video = new System.Windows.Forms.Button();
             this.btn_voltar = new System.Windows.Forms.Button();
+            this.label3 = new System.Windows.Forms.Label();
+            this.rb_alta = new System.Windows.Forms.RadioButton();
+            this.rb_baixa = new System.Windows.Forms.RadioButton();
+            this.panel2 = new System.Windows.Forms.Panel();
+            this.panel3 = new System.Windows.Forms.Panel();
             this.panel1.SuspendLayout();
+            this.panel2.SuspendLayout();
+            this.panel3.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
@@ -108,10 +115,11 @@
             // rb_audio
             // 
             this.rb_audio.AutoSize = true;
-            this.rb_audio.Location = new System.Drawing.Point(149, 133);
+            this.rb_audio.Location = new System.Drawing.Point(65, 0);
             this.rb_audio.Name = "rb_audio";
             this.rb_audio.Size = new System.Drawing.Size(57, 17);
             this.rb_audio.TabIndex = 5;
+            this.rb_audio.Tag = "1";
             this.rb_audio.Text = "Audios";
             this.rb_audio.UseVisualStyleBackColor = true;
             // 
@@ -119,17 +127,19 @@
             // 
             this.rb_video.AutoSize = true;
             this.rb_video.Checked = true;
-            this.rb_video.Location = new System.Drawing.Point(86, 132);
+            this.rb_video.Location = new System.Drawing.Point(3, 0);
             this.rb_video.Name = "rb_video";
             this.rb_video.Size = new System.Drawing.Size(57, 17);
             this.rb_video.TabIndex = 6;
             this.rb_video.TabStop = true;
+            this.rb_video.Tag = "1";
             this.rb_video.Text = "Videos";
             this.rb_video.UseVisualStyleBackColor = true;
+            this.rb_video.CheckedChanged += new System.EventHandler(this.rb_video_CheckedChanged);
             // 
             // btn_baixar
             // 
-            this.btn_baixar.Location = new System.Drawing.Point(12, 155);
+            this.btn_baixar.Location = new System.Drawing.Point(12, 196);
             this.btn_baixar.Name = "btn_baixar";
             this.btn_baixar.Size = new System.Drawing.Size(542, 54);
             this.btn_baixar.TabIndex = 7;
@@ -139,7 +149,7 @@
             // 
             // btn_pasta_audio
             // 
-            this.btn_pasta_audio.Location = new System.Drawing.Point(340, 216);
+            this.btn_pasta_audio.Location = new System.Drawing.Point(340, 257);
             this.btn_pasta_audio.Name = "btn_pasta_audio";
             this.btn_pasta_audio.Size = new System.Drawing.Size(214, 51);
             this.btn_pasta_audio.TabIndex = 8;
@@ -149,7 +159,7 @@
             // 
             // btn_pasta_video
             // 
-            this.btn_pasta_video.Location = new System.Drawing.Point(120, 215);
+            this.btn_pasta_video.Location = new System.Drawing.Point(120, 256);
             this.btn_pasta_video.Name = "btn_pasta_video";
             this.btn_pasta_video.Size = new System.Drawing.Size(214, 51);
             this.btn_pasta_video.TabIndex = 9;
@@ -159,7 +169,7 @@
             // 
             // btn_voltar
             // 
-            this.btn_voltar.Location = new System.Drawing.Point(12, 215);
+            this.btn_voltar.Location = new System.Drawing.Point(12, 256);
             this.btn_voltar.Name = "btn_voltar";
             this.btn_voltar.Size = new System.Drawing.Size(102, 51);
             this.btn_voltar.TabIndex = 10;
@@ -167,25 +177,79 @@
             this.btn_voltar.UseVisualStyleBackColor = true;
             this.btn_voltar.Click += new System.EventHandler(this.btn_voltar_Click);
             // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(3, 3);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(144, 13);
+            this.label3.TabIndex = 11;
+            this.label3.Text = "Qual a qualidade dos videos:";
+            // 
+            // rb_alta
+            // 
+            this.rb_alta.AutoSize = true;
+            this.rb_alta.Checked = true;
+            this.rb_alta.Location = new System.Drawing.Point(158, 0);
+            this.rb_alta.Name = "rb_alta";
+            this.rb_alta.Size = new System.Drawing.Size(43, 17);
+            this.rb_alta.TabIndex = 12;
+            this.rb_alta.TabStop = true;
+            this.rb_alta.Text = "Alta";
+            this.rb_alta.UseVisualStyleBackColor = true;
+            // 
+            // rb_baixa
+            // 
+            this.rb_baixa.AutoSize = true;
+            this.rb_baixa.Location = new System.Drawing.Point(207, 0);
+            this.rb_baixa.Name = "rb_baixa";
+            this.rb_baixa.Size = new System.Drawing.Size(51, 17);
+            this.rb_baixa.TabIndex = 13;
+            this.rb_baixa.Text = "Baixa";
+            this.rb_baixa.UseVisualStyleBackColor = true;
+            // 
+            // panel2
+            // 
+            this.panel2.Controls.Add(this.rb_video);
+            this.panel2.Controls.Add(this.rb_audio);
+            this.panel2.Location = new System.Drawing.Point(86, 133);
+            this.panel2.Name = "panel2";
+            this.panel2.Size = new System.Drawing.Size(124, 20);
+            this.panel2.TabIndex = 14;
+            // 
+            // panel3
+            // 
+            this.panel3.Controls.Add(this.label3);
+            this.panel3.Controls.Add(this.rb_alta);
+            this.panel3.Controls.Add(this.rb_baixa);
+            this.panel3.Location = new System.Drawing.Point(12, 159);
+            this.panel3.Name = "panel3";
+            this.panel3.Size = new System.Drawing.Size(261, 18);
+            this.panel3.TabIndex = 15;
+            // 
             // TelaPlaylist
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(569, 281);
+            this.ClientSize = new System.Drawing.Size(569, 319);
             this.Controls.Add(this.btn_voltar);
             this.Controls.Add(this.btn_pasta_video);
             this.Controls.Add(this.btn_pasta_audio);
             this.Controls.Add(this.btn_baixar);
-            this.Controls.Add(this.rb_video);
-            this.Controls.Add(this.rb_audio);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.panel1);
             this.Controls.Add(this.text_link);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
+            this.Controls.Add(this.panel2);
+            this.Controls.Add(this.panel3);
             this.Name = "TelaPlaylist";
             this.Text = "Baixador de Playlists";
             this.panel1.ResumeLayout(false);
+            this.panel2.ResumeLayout(false);
+            this.panel2.PerformLayout();
+            this.panel3.ResumeLayout(false);
+            this.panel3.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -201,10 +265,15 @@
         private System.Windows.Forms.ProgressBar bar_progresso;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.RadioButton rb_audio;
-        private System.Windows.Forms.RadioButton rb_video;
         private System.Windows.Forms.Button btn_baixar;
         private System.Windows.Forms.Button btn_pasta_audio;
         private System.Windows.Forms.Button btn_pasta_video;
         private System.Windows.Forms.Button btn_voltar;
+        private System.Windows.Forms.Label label3;
+        private System.Windows.Forms.RadioButton rb_video;
+        private System.Windows.Forms.RadioButton rb_alta;
+        private System.Windows.Forms.RadioButton rb_baixa;
+        private System.Windows.Forms.Panel panel2;
+        private System.Windows.Forms.Panel panel3;
     }
 }
