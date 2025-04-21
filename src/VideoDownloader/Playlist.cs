@@ -141,9 +141,10 @@ namespace VideoDownloader
             var videos = await youtube.Playlists.GetVideosAsync(url);
             string tituloPlaylist = playlist.Title;
             CreateDirVideo(tituloPlaylist);
-            int i = 1, total = Convert.ToInt32(videos.Count());
+            int i = 0, total = Convert.ToInt32(videos.Count());
             foreach (var video in videos)
             {
+                i++;
                 logger.Log(20, "Iniciando processo ("+i+"/"+total+")...");
                 var videoName = video.Title;
                 var manifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
