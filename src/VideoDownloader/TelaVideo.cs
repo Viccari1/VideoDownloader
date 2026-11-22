@@ -21,8 +21,9 @@ namespace VideoDownloader
         public TelaVideo()
         {
             InitializeComponent();
-            CreateDirEssential();
+            FileHelper.GarantirDiretoriosPadrao();
             this.Shown += TelaVideo_Shown;
+            this.FormClosed += TelaVideo_FormClosed;
         }
 
         private void TelaVideo_Shown(object sender, EventArgs e)
@@ -31,19 +32,9 @@ namespace VideoDownloader
             pic_thumb.Image = ThumbnailHelper.CriarPlaceholder(pic_thumb.Width, pic_thumb.Height, "Aguardando URL do Vídeo");
         }
 
-        private void CreateDirEssential()
+        private void TelaVideo_FormClosed(object sender, FormClosedEventArgs e)
         {
-            string videoDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas");
-            if (!Directory.Exists(videoDir))
-            {
-                Directory.CreateDirectory(videoDir);
-            }
-
-            string musicDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas");
-            if (!Directory.Exists(musicDir))
-            {
-                Directory.CreateDirectory(musicDir);
-            }
+            pic_thumb.Image?.Dispose();
         }
 
         private void text_link_KeyDown(object sender, KeyEventArgs e)
@@ -269,14 +260,12 @@ namespace VideoDownloader
 
         private void btn_pasta_video_Click(object sender, EventArgs e)
         {
-            var arg = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas");
-            System.Diagnostics.Process.Start("explorer.exe", arg);
+            System.Diagnostics.Process.Start("explorer.exe", FileHelper.ObterPastaVideos());
         }
 
         private void btn_pasta_audio_Click(object sender, EventArgs e)
         {
-            var arg = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas");
-            System.Diagnostics.Process.Start("explorer.exe", arg);
+            System.Diagnostics.Process.Start("explorer.exe", FileHelper.ObterPastaMusicas());
         }
     }
 }

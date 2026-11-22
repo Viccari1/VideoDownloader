@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -187,6 +188,65 @@ namespace VideoDownloader
             }
 
             throw new InvalidOperationException("Não foi possível baixar o FFmpeg de nenhuma das fontes disponíveis. Verifique sua conexão com a internet.", ultimaExcecao);
+        }
+
+        /// <summary>
+        /// Executa comandos FFmpeg de forma assíncrona com leitura de saída sem deadlock de buffer.
+        /// </summary>
+        private static async Task ExecutarFFmpegAsync(string args)
+        {
+            string ffmpegPath = GetFFmpegPath();
+            if (!File.Exists(ffmpegPath))
+            {
+                throw new FileNotFoundException("O executável do FFmpeg não foi encontrado no sistema.", ffmpegPath);
+            }
+
+            await Task.Run(() =>
+            {
+                using (var process = new Process
+                {
+                    StartInfo = new ProcessStartInfo
+                    {
+                        FileName = ffmpegPath,
+                        Arguments = args,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        RedirectStandardOutput = false,
+                        RedirectStandardError = true
+                    }
+                })
+                {
+                    process.Start();
+
+                    // Lê o stream de erro (onde o FFmpeg grava logs) de forma contínua até o término,
+                    // prevenindo completamente o travamento por deadlock do buffer de pipes do Windows.
+                    string stderr = process.StandardError.ReadToEnd();
+                    process.WaitForExit();
+
+                    if (process.ExitCode != 0)
+                    {
+                        throw new InvalidOperationException($"Falha do FFmpeg (código {process.ExitCode}): {stderr}");
+                    }
+                }
+            });
+        }
+
+        /// <summary>
+        /// Mescla os arquivos temporários de vídeo e áudio em um único arquivo final MP4.
+        /// </summary>
+        public static async Task MesclarAudioVideoAsync(string videoPath, string audioPath, string destinoFinal)
+        {
+            string args = $"-y -i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a aac -b:a 192k \"{destinoFinal}\"";
+            await ExecutarFFmpegAsync(args);
+        }
+
+        /// <summary>
+        /// Converte o arquivo de áudio temporário para MP3 de alta fidelidade (320 kbps).
+        /// </summary>
+        public static async Task ConverterParaMp3Async(string inputAudioPath, string destinoFinalMp3)
+        {
+            string args = $"-y -i \"{inputAudioPath}\" -vn -c:a libmp3lame -b:a 320k \"{destinoFinalMp3}\"";
+            await ExecutarFFmpegAsync(args);
         }
     }
 }

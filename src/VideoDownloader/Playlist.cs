@@ -1,120 +1,73 @@
-﻿using AngleSharp.Dom;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Security.Principal;
-using System.Text;
 using System.Threading.Tasks;
 using YoutubeExplode;
 using YoutubeExplode.Common;
-using YoutubeExplode.Converter;
 using YoutubeExplode.Videos.Streams;
 
 namespace VideoDownloader
 {
     internal class Playlist
     {
-        string url;
-        public string pasta;
-        YoutubeClient youtube;
-        string ffmpegPath = FFmpegHelper.GetFFmpegPath();
-        public bool qualidadeAlta = false;
-        public string fullDir;
+        private readonly string url;
+        private readonly YoutubeClient youtube;
 
+        public string pasta { get; private set; }
+        public string fullDir { get; private set; }
+        public bool qualidadeAlta { get; set; } = true;
+
+        // Cache para evitar requisições repetidas
         private YoutubeExplode.Playlists.Playlist _cachedPlaylist;
         private IReadOnlyList<YoutubeExplode.Playlists.PlaylistVideo> _cachedVideos;
 
         public Playlist(string url)
         {
             this.url = url;
-            youtube = new YoutubeClient();
+            this.youtube = YoutubeHelper.Client;
         }
 
         public async Task<PlaylistDetails> ObterDetalhesPlaylistAsync()
         {
-            if (_cachedPlaylist == null)
+            try
             {
-                _cachedPlaylist = await youtube.Playlists.GetAsync(url);
-            }
-            if (_cachedVideos == null)
-            {
-                _cachedVideos = await youtube.Playlists.GetVideosAsync(url);
-            }
-
-            string firstThumb = null;
-            string firstId = null;
-
-            if (_cachedVideos != null && _cachedVideos.Count > 0)
-            {
-                var primeiro = _cachedVideos[0];
-                firstId = primeiro.Id.Value;
-                firstThumb = primeiro.Thumbnails.GetWithHighestResolution().Url;
-            }
-            else if (_cachedPlaylist.Thumbnails != null && _cachedPlaylist.Thumbnails.Count > 0)
-            {
-                firstThumb = _cachedPlaylist.Thumbnails.GetWithHighestResolution().Url;
-            }
-
-            return new PlaylistDetails
-            {
-                Title = _cachedPlaylist.Title,
-                Author = _cachedPlaylist.Author?.ChannelTitle ?? "Desconhecido",
-                TotalVideos = _cachedVideos?.Count ?? 0,
-                ThumbnailUrl = firstThumb,
-                FirstVideoId = firstId
-            };
-        }
-
-        private string ExistFile(string basePath, string nome, string ext)
-        {
-            string nomeLimpo = RemoveInvalidChars(nome);
-            string nomeFinal = nomeLimpo;
-            int i = 1;
-
-            while (true)
-            {
-                string path = Path.Combine(basePath, nomeFinal + ext);
-                if (!File.Exists(path))
+                if (_cachedPlaylist == null)
                 {
-                    return path;
+                    _cachedPlaylist = await youtube.Playlists.GetAsync(url);
+                }
+                if (_cachedVideos == null)
+                {
+                    _cachedVideos = await youtube.Playlists.GetVideosAsync(url);
                 }
 
-                nomeFinal = $"{nomeLimpo} ({i})";
-                i++;
+                string firstThumb = null;
+                string firstId = null;
+
+                if (_cachedVideos != null && _cachedVideos.Count > 0)
+                {
+                    var primeiro = _cachedVideos[0];
+                    firstId = primeiro.Id.Value;
+                    firstThumb = primeiro.Thumbnails.GetWithHighestResolution().Url;
+                }
+                else if (_cachedPlaylist.Thumbnails != null && _cachedPlaylist.Thumbnails.Count > 0)
+                {
+                    firstThumb = _cachedPlaylist.Thumbnails.GetWithHighestResolution().Url;
+                }
+
+                return new PlaylistDetails
+                {
+                    Title = _cachedPlaylist.Title,
+                    Author = _cachedPlaylist.Author?.ChannelTitle ?? "Desconhecido",
+                    TotalVideos = _cachedVideos?.Count ?? 0,
+                    ThumbnailUrl = firstThumb,
+                    FirstVideoId = firstId
+                };
             }
-        }
-
-        private void CreateDirVideo(string dir)
-        {
-            pasta = RemoveInvalidChars(dir);
-            string videoPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas", pasta);
-
-            if (!Directory.Exists(videoPath))
+            catch (Exception ex)
             {
-                Directory.CreateDirectory(videoPath);
+                throw new InvalidOperationException(YoutubeErrorHelper.TratarExcecao(ex), ex);
             }
-        }
-
-        private void CreateDirAudio(string dir)
-        {
-            pasta = RemoveInvalidChars(dir);
-            string musicPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas", pasta);
-
-            if (!Directory.Exists(musicPath))
-            {
-                Directory.CreateDirectory(musicPath);
-            }
-        }
-
-        private string RemoveInvalidChars(string nome)
-        {
-            foreach (char c in Path.GetInvalidFileNameChars())
-            {
-                nome = nome.Replace(c, '_');
-            }
-            return string.IsNullOrWhiteSpace(nome) ? "item" : nome.Trim();
         }
 
         public async Task<(bool, string)> VerifyPlaylistOKAsync()
@@ -130,32 +83,35 @@ namespace VideoDownloader
             }
             catch (Exception ex)
             {
-                return (false, $"Não foi possível carregar a playlist: {ex.Message}");
+                return (false, $"Não foi possível carregar a playlist: {YoutubeErrorHelper.TratarExcecao(ex)}");
             }
         }
 
-        public (bool, string) VerifyPlaylistOK()
+        private (IStreamInfo, IStreamInfo) ObterStreamsVideo(StreamManifest manifest, bool altaQualidade)
         {
-            return VerifyPlaylistOKAsync().GetAwaiter().GetResult();
+            var audioStream = manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+            IStreamInfo videoStream;
+
+            if (altaQualidade)
+            {
+                videoStream = manifest.GetVideoOnlyStreams()
+                    .Where(s => s.VideoQuality.Label != "360p")
+                    .OrderByDescending(s => s.Bitrate)
+                    .FirstOrDefault()
+                    ?? manifest.GetVideoOnlyStreams().OrderByDescending(s => s.VideoQuality.MaxHeight).FirstOrDefault();
+            }
+            else
+            {
+                videoStream = manifest.GetVideoOnlyStreams()
+                    .Where(s => s.VideoQuality.Label == "360p")
+                    .OrderByDescending(s => s.Bitrate)
+                    .FirstOrDefault()
+                    ?? manifest.GetVideoOnlyStreams().OrderBy(s => s.VideoQuality.MaxHeight).FirstOrDefault();
+            }
+
+            return (videoStream, audioStream);
         }
-        private (IStreamInfo, IStreamInfo) GetStreamsVideoHigh(StreamManifest manifest)
-        {
-            var audioStreamInfo = manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
-            var videoStreamInfo = manifest.GetVideoOnlyStreams()
-                                      .Where(s => s.VideoQuality.Label != "360p")
-                                      .OrderByDescending(s => s.Bitrate)
-                                      .FirstOrDefault();
-            return (videoStreamInfo, audioStreamInfo);
-        }
-        private (IStreamInfo, IStreamInfo) GetStreamsVideoLow(StreamManifest manifest)
-        {
-            var audioStreamInfo = manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
-            var videoStreamInfo = manifest.GetVideoOnlyStreams()
-                                      .Where(s => s.VideoQuality.Label == "360p")
-                                      .OrderByDescending(s => s.Bitrate)
-                                      .FirstOrDefault();
-            return (videoStreamInfo, audioStreamInfo);
-        }
+
         public async Task DownloadVideos(Logger logger)
         {
             logger.Log(5, "Buscando playlist...");
@@ -168,10 +124,12 @@ namespace VideoDownloader
                 _cachedVideos = await youtube.Playlists.GetVideosAsync(url);
             }
 
-            string tituloPlaylist = _cachedPlaylist.Title;
-            CreateDirVideo(tituloPlaylist);
-
-            var destinoPasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas", pasta);
+            pasta = FileHelper.SanitizarNomeArquivo(_cachedPlaylist.Title, "Playlist");
+            string destinoPasta = Path.Combine(FileHelper.ObterPastaVideos(), pasta);
+            if (!Directory.Exists(destinoPasta))
+            {
+                Directory.CreateDirectory(destinoPasta);
+            }
             this.fullDir = destinoPasta;
 
             int total = _cachedVideos.Count;
@@ -189,59 +147,31 @@ namespace VideoDownloader
                     logger.Log(percentualBase, $"Processando ({i}/{total}): {video.Title}...");
 
                     var manifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
-                    IStreamInfo videoStream, audioStream;
-
-                    if (qualidadeAlta)
-                    {
-                        (videoStream, audioStream) = GetStreamsVideoHigh(manifest);
-                    }
-                    else
-                    {
-                        (videoStream, audioStream) = GetStreamsVideoLow(manifest);
-                    }
+                    var (videoStream, audioStream) = ObterStreamsVideo(manifest, qualidadeAlta);
 
                     if (videoStream == null || audioStream == null)
                     {
-                        throw new InvalidOperationException("Streams de vídeo/áudio não encontrados para este item.");
+                        throw new InvalidOperationException("Streams de mídia indisponíveis para este vídeo.");
                     }
 
-                    string arquivoFinal = ExistFile(destinoPasta, video.Title, ".mp4");
-                    string videoPath = Path.Combine(Path.GetTempPath(), $"vid_{Guid.NewGuid():N}.mp4");
-                    string audioPath = Path.Combine(Path.GetTempPath(), $"aud_{Guid.NewGuid():N}.mp3");
+                    string arquivoFinal = FileHelper.ObterCaminhoDisponivel(destinoPasta, video.Title, ".mp4");
+                    string videoExt = videoStream.Container.Name;
+                    string audioExt = audioStream.Container.Name;
+                    string videoTemp = Path.Combine(Path.GetTempPath(), $"vid_{Guid.NewGuid():N}.{videoExt}");
+                    string audioTemp = Path.Combine(Path.GetTempPath(), $"aud_{Guid.NewGuid():N}.{audioExt}");
 
                     try
                     {
-                        await youtube.Videos.Streams.DownloadAsync(videoStream, videoPath);
-                        await youtube.Videos.Streams.DownloadAsync(audioStream, audioPath);
+                        await youtube.Videos.Streams.DownloadAsync(videoStream, videoTemp);
+                        await youtube.Videos.Streams.DownloadAsync(audioStream, audioTemp);
 
-                        string args = $"-i \"{videoPath}\" -i \"{audioPath}\" -c:v copy -c:a aac \"{arquivoFinal}\"";
-                        using (var process = new Process
-                        {
-                            StartInfo = new ProcessStartInfo
-                            {
-                                FileName = ffmpegPath,
-                                Arguments = args,
-                                RedirectStandardOutput = true,
-                                UseShellExecute = false,
-                                CreateNoWindow = true
-                            }
-                        })
-                        {
-                            process.Start();
-                            process.WaitForExit();
-
-                            if (process.ExitCode != 0)
-                            {
-                                throw new InvalidOperationException("Erro ao mesclar vídeo e áudio via FFmpeg.");
-                            }
-                        }
-
+                        await FFmpegHelper.MesclarAudioVideoAsync(videoTemp, audioTemp, arquivoFinal);
                         baixados++;
                     }
                     finally
                     {
-                        if (File.Exists(videoPath)) File.Delete(videoPath);
-                        if (File.Exists(audioPath)) File.Delete(audioPath);
+                        if (File.Exists(videoTemp)) File.Delete(videoTemp);
+                        if (File.Exists(audioTemp)) File.Delete(audioTemp);
                     }
                 }
                 catch (Exception ex)
@@ -274,10 +204,12 @@ namespace VideoDownloader
                 _cachedVideos = await youtube.Playlists.GetVideosAsync(url);
             }
 
-            string tituloPlaylist = _cachedPlaylist.Title;
-            CreateDirAudio(tituloPlaylist);
-
-            var destinoPasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas", pasta);
+            pasta = FileHelper.SanitizarNomeArquivo(_cachedPlaylist.Title, "Playlist");
+            string destinoPasta = Path.Combine(FileHelper.ObterPastaMusicas(), pasta);
+            if (!Directory.Exists(destinoPasta))
+            {
+                Directory.CreateDirectory(destinoPasta);
+            }
             this.fullDir = destinoPasta;
 
             int total = _cachedVideos.Count;
@@ -293,14 +225,31 @@ namespace VideoDownloader
                 try
                 {
                     logger.Log(percentualBase, $"Baixando áudio ({i}/{total}): {video.Title}...");
-                    string arquivoFinal = ExistFile(destinoPasta, video.Title, ".mp3");
 
-                    await youtube.Videos.DownloadAsync(video.Url, arquivoFinal, o => o
-                        .SetContainer("mp3")
-                        .SetPreset(ConversionPreset.Fast)
-                        .SetFFmpegPath(ffmpegPath));
+                    var manifest = await youtube.Videos.Streams.GetManifestAsync(video.Id);
+                    var audioStream = manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
+                    if (audioStream == null)
+                    {
+                        throw new InvalidOperationException("Stream de áudio indisponível para este vídeo.");
+                    }
 
-                    baixados++;
+                    string arquivoFinal = FileHelper.ObterCaminhoDisponivel(destinoPasta, video.Title, ".mp3");
+                    string audioExt = audioStream.Container.Name;
+                    string audioTemp = Path.Combine(Path.GetTempPath(), $"aud_{Guid.NewGuid():N}.{audioExt}");
+
+                    try
+                    {
+                        await youtube.Videos.Streams.DownloadAsync(audioStream, audioTemp);
+                        await FFmpegHelper.ConverterParaMp3Async(audioTemp, arquivoFinal);
+                        baixados++;
+                    }
+                    finally
+                    {
+                        if (File.Exists(audioTemp))
+                        {
+                            File.Delete(audioTemp);
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {

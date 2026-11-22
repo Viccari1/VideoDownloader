@@ -25,7 +25,7 @@ Este documento mapeia detalhadamente todos os arquivos, fluxos e responsabilidad
 | Se você precisa... | Arquivos Primários | Arquivos Secundários |
 | :--- | :--- | :--- |
 | **Alterar pasta ou regra de nomenclatura dos arquivos baixados** | [Video.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Video.cs)<br>[Audio.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Audio.cs)<br>[Playlist.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Playlist.cs) | [TelaVideo.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaVideo.cs)<br>[TelaPlaylist.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPlaylist.cs) |
-| **Modificar a lógica de obtenção/seleção de qualidade de vídeo** | [Video.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Video.cs)<br>[TelaQualidade.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaQualidade.cs)<br>[Global.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Global.cs) | [TelaVideo.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaVideo.cs) |
+| **Modificar a lógica de obtenção/seleção de qualidade de vídeo** | [Video.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Video.cs)<br>[TelaVideo.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaVideo.cs) | [VideoDetails.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/VideoDetails.cs) |
 | **Alterar o fluxo de download de vídeo avulso (FFmpeg / união de streams)** | [Video.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Video.cs) | [TelaVideo.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaVideo.cs) |
 | **Alterar o fluxo de download de áudio avulso (conversão MP3 / bitrate)** | [Audio.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Audio.cs) | [TelaVideo.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaVideo.cs) |
 | **Alterar lógica de download ou tratamento de Playlists** | [Playlist.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Playlist.cs) | [TelaPlaylist.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPlaylist.cs) |
@@ -56,11 +56,13 @@ VideoDownloader/
         ├── VideoDownloader.csproj           # Arquivo de projeto MSBuild C#
         │
         ├── Program.cs                       # Ponto de entrada (Main) da aplicação WinForms
-        ├── Global.cs                        # Estado estático compartilhado (qualidades de vídeo)
         ├── IDownloader.cs                   # Interface comum para Downloaders (Video e Audio)
         ├── Logger.cs                        # Adaptador para IProgress<int> e Label de status
-        ├── FFmpegHelper.cs                  # Utilitário: detecção no PATH/disco e download automático do FFmpeg
+        ├── FileHelper.cs                    # Utilitário centralizado de caminhos, sanitização de nomes e pastas
+        ├── FFmpegHelper.cs                  # Utilitário: detecção no PATH/disco, download automático e multiplexação FFmpeg
         ├── ThumbnailHelper.cs               # Utilitário: carregamento assíncrono e seguro de capas GDI+ com placeholders
+        ├── YoutubeHelper.cs                 # Gerenciamento de instância única/compartilhada do YoutubeClient
+        ├── YoutubeErrorHelper.cs            # Tratamento centralizado e formatação amigável de erros (403, URLs inválidas)
         │
         ├── Video.cs                         # Regra de negócio: Download de vídeos avulsos e multiplexação FFmpeg
         ├── VideoDetails.cs                  # Modelo de dados: metadados do vídeo, thumbnail, duração e peso por qualidade

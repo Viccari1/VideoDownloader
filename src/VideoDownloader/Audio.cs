@@ -2,7 +2,6 @@
 using System.IO;
 using System.Threading.Tasks;
 using YoutubeExplode;
-using YoutubeExplode.Converter;
 using YoutubeExplode.Videos.Streams;
 
 namespace VideoDownloader
@@ -10,48 +9,17 @@ namespace VideoDownloader
     internal class Audio : IDownloader
     {
         public string arquivo { get; private set; }
+
         private readonly string url;
         private readonly YoutubeClient youtube;
-        private readonly string ffmpegPath = FFmpegHelper.GetFFmpegPath();
 
-        // Cache para evitar requisições duplicadas
+        // Cache local para evitar requisições duplicadas
         private YoutubeExplode.Videos.Video _cachedVideo;
 
         public Audio(string url)
         {
             this.url = url;
-            this.youtube = new YoutubeClient();
-        }
-
-        private static string TratarErroYoutube(Exception ex)
-        {
-            string erroCompleto = ex.ToString();
-            if (erroCompleto.Contains("403") || erroCompleto.Contains("Forbidden"))
-            {
-                return "Erro 403 (Acesso Negado pelo YouTube):\n\n" +
-                       "O YouTube restringiu temporariamente o acesso a este stream de áudio.\n" +
-                       "Possíveis causas:\n" +
-                       "• Restrição de direitos autorais ou restrição de idade;\n" +
-                       "• Bloqueio regional de exibição;\n" +
-                       "• Excesso temporário de requisições do seu IP.\n\n" +
-                       "Aguarde alguns minutos ou tente outro vídeo.";
-            }
-
-            if (ex is ArgumentException)
-            {
-                return "A URL informada é inválida. Verifique o link e tente novamente.";
-            }
-
-            return ex.Message;
-        }
-
-        private static string RemoveInvalidChars(string nome)
-        {
-            foreach (char c in Path.GetInvalidFileNameChars())
-            {
-                nome = nome.Replace(c, '_');
-            }
-            return string.IsNullOrWhiteSpace(nome) ? "audio" : nome.Trim();
+            this.youtube = YoutubeHelper.Client;
         }
 
         public async Task<(bool, string)> VerifyVideoOKAsync()
@@ -66,37 +34,7 @@ namespace VideoDownloader
             }
             catch (Exception ex)
             {
-                return (false, TratarErroYoutube(ex));
-            }
-        }
-
-        public (bool, string) VerifyVideoOK()
-        {
-            return VerifyVideoOKAsync().GetAwaiter().GetResult();
-        }
-
-        private static string ExistFile(string tituloAudio)
-        {
-            string pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas");
-            if (!Directory.Exists(pasta))
-            {
-                Directory.CreateDirectory(pasta);
-            }
-
-            string nomeLimpo = RemoveInvalidChars(tituloAudio);
-            string nomeFinal = nomeLimpo;
-            int i = 1;
-
-            while (true)
-            {
-                string path = Path.Combine(pasta, nomeFinal + ".mp3");
-                if (!File.Exists(path))
-                {
-                    return path;
-                }
-
-                nomeFinal = $"{nomeLimpo} ({i})";
-                i++;
+                return (false, YoutubeErrorHelper.TratarExcecao(ex));
             }
         }
 
@@ -110,26 +48,48 @@ namespace VideoDownloader
                     _cachedVideo = await youtube.Videos.GetAsync(url);
                 }
 
-                arquivo = ExistFile(_cachedVideo.Title);
-                logger.Log(15, $"Preparando arquivo: {Path.GetFileName(arquivo)}");
+                logger.Log(15, "Obtendo streams de áudio de alta resolução...");
+                var manifest = await youtube.Videos.Streams.GetManifestAsync(_cachedVideo.Id);
+                var audioStream = manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
 
-                var progress = new Progress<double>(p =>
+                if (audioStream == null)
                 {
-                    int percent = 15 + (int)(p * 80);
-                    logger.Log(percent, $"Baixando e convertendo áudio: {p:P0}...");
-                });
+                    throw new InvalidOperationException("Não foi possível encontrar streams de áudio disponíveis para este vídeo.");
+                }
 
-                await youtube.Videos.DownloadAsync(url, arquivo, o => o
-                    .SetContainer("mp3")
-                    .SetPreset(ConversionPreset.Fast)
-                    .SetFFmpegPath(ffmpegPath),
-                    progress);
+                arquivo = FileHelper.ObterCaminhoDisponivel(FileHelper.ObterPastaMusicas(), _cachedVideo.Title, ".mp3");
+                logger.Log(20, $"Arquivo de destino: {Path.GetFileName(arquivo)}");
 
-                logger.Log(100, "Áudio baixado com sucesso!");
+                string audioExt = audioStream.Container.Name;
+                string tempAudio = Path.Combine(Path.GetTempPath(), $"aud_{Guid.NewGuid():N}.{audioExt}");
+
+                try
+                {
+                    // Progresso do download direto do fluxo de áudio original do YouTube (20% a 85%)
+                    var progress = new Progress<double>(p =>
+                    {
+                        int percent = 20 + (int)(p * 65);
+                        logger.Log(percent, $"Baixando áudio: {p:P0}...");
+                    });
+
+                    await youtube.Videos.Streams.DownloadAsync(audioStream, tempAudio, progress);
+
+                    logger.Log(88, "Convertendo áudio para MP3 (320 kbps Alta Fidelidade)...");
+                    await FFmpegHelper.ConverterParaMp3Async(tempAudio, arquivo);
+
+                    logger.Log(100, "Áudio baixado e convertido com sucesso!");
+                }
+                finally
+                {
+                    if (File.Exists(tempAudio))
+                    {
+                        File.Delete(tempAudio);
+                    }
+                }
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException(TratarErroYoutube(ex), ex);
+                throw new InvalidOperationException(YoutubeErrorHelper.TratarExcecao(ex), ex);
             }
         }
     }
