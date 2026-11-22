@@ -19,7 +19,7 @@ namespace VideoDownloader
         string NOME = "arquivo";
         public string arquivo;
         string url;
-        public string qualidade;
+        public string qualidade { get; set; }
         YoutubeClient youtube;
         string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
 
