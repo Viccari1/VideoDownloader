@@ -19,7 +19,7 @@ namespace VideoDownloader
         string url;
         public string pasta;
         YoutubeClient youtube;
-        string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
+        string ffmpegPath = FFmpegHelper.GetFFmpegPath();
         public bool qualidadeAlta = false;
         public string fullDir;
 
@@ -159,7 +159,7 @@ namespace VideoDownloader
                     (videoStream, audioStream) = GetStreamsVideoLow(manifest);
                 }
                 var fullDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas\\", RemoveInvalidChars(tituloPlaylist));
-                var arquivo = Path.Combine(fullDir, ExistFileVideo(videoName, ".mp4") + ".mp4");
+                var arquivo = Path.Combine(fullDir, ExistFileVideo(videoName, ".mp4"));
 
                 logger.Log(60, "Criando arquivos temporários (" + i + "/" + total + ")...");
                 string videoPath = Path.Combine(Path.GetTempPath(), "video.mp4");

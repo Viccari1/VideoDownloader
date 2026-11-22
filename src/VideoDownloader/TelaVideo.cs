@@ -40,6 +40,16 @@ namespace VideoDownloader
                 return;
             }
 
+            if (!FFmpegHelper.IsDisponivel())
+            {
+                bool ok = FFmpegHelper.GarantirFFmpeg(this);
+                if (!ok)
+                {
+                    MessageBox.Show("Não é possível realizar downloads sem o FFmpeg configurado.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+            }
+
             emUso = true;
 
             dynamic downloader;

@@ -13,7 +13,7 @@ namespace VideoDownloader
         public string arquivo;
         string url;
         YoutubeClient youtube;
-        string ffmpegPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe");
+        string ffmpegPath = FFmpegHelper.GetFFmpegPath();
         public Audio(string url)
         {
             this.url = url;

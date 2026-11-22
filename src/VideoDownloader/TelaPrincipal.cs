@@ -15,10 +15,37 @@ namespace VideoDownloader
         public TelaPrincipal()
         {
             InitializeComponent();
+            this.Shown += TelaPrincipal_Shown;
+        }
+
+        private void TelaPrincipal_Shown(object sender, EventArgs e)
+        {
+            if (!FFmpegHelper.IsDisponivel())
+            {
+                var dialog = MessageBox.Show(
+                    "O componente essencial FFmpeg não foi encontrado no seu computador.\n\n" +
+                    "Ele é obrigatório para converter músicas e mesclar áudio/vídeo.\n\n" +
+                    "Deseja fazer o download e configuração automática agora?",
+                    "Configuração Inicial - FFmpeg",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Information);
+
+                if (dialog == DialogResult.Yes)
+                {
+                    FFmpegHelper.GarantirFFmpeg(this);
+                }
+            }
         }
 
         private void btn_videos_Click(object sender, EventArgs e)
         {
+            bool ok = FFmpegHelper.GarantirFFmpeg(this);
+            if (!ok)
+            {
+                MessageBox.Show("O FFmpeg é obrigatório para realizar os downloads.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             TelaVideo telaVideo = new TelaVideo();
             telaVideo.FormClosed += TelaFormClosed;
             this.Hide();
@@ -27,6 +54,13 @@ namespace VideoDownloader
 
         private void btn_playlists_Click(object sender, EventArgs e)
         {
+            bool ok = FFmpegHelper.GarantirFFmpeg(this);
+            if (!ok)
+            {
+                MessageBox.Show("O FFmpeg é obrigatório para realizar os downloads.", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
             TelaPlaylist telaPlaylist = new TelaPlaylist();
             telaPlaylist.FormClosed += TelaFormClosed;
             this.Hide();

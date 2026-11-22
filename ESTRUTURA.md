@@ -33,6 +33,7 @@ Este documento mapeia detalhadamente todos os arquivos, fluxos e responsabilidad
 | **Alterar a interface ou comportamento da tela de playlists** | [TelaPlaylist.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPlaylist.cs)<br>[TelaPlaylist.Designer.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPlaylist.Designer.cs) | [TelaPlaylist.resx](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPlaylist.resx) |
 | **Alterar a tela inicial (menu de opções/navegação)** | [TelaPrincipal.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPrincipal.cs)<br>[TelaPrincipal.Designer.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPrincipal.Designer.cs) | [TelaPrincipal.resx](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPrincipal.resx) |
 | **Alterar como o progresso e as mensagens de status são exibidos** | [Logger.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Logger.cs) | [TelaVideo.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaVideo.cs)<br>[TelaPlaylist.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPlaylist.cs) |
+| **Download e detecção automática do executável FFmpeg** | [FFmpegHelper.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/FFmpegHelper.cs)<br>[TelaDownloadFFmpeg.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaDownloadFFmpeg.cs) | [TelaPrincipal.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPrincipal.cs)<br>[Video.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Video.cs) |
 | **Atualizar pacotes NuGet, redirecionamentos de binding ou versão do C#/.NET** | [packages.config](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/packages.config)<br>[App.config](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/App.config)<br>[VideoDownloader.csproj](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/VideoDownloader.csproj) | - |
 | **Metadados da aplicação (versão, autor, ícone, título da janela)** | [AssemblyInfo.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Properties/AssemblyInfo.cs) | [Resources.resx](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Properties/Resources.resx) |
 
@@ -57,6 +58,7 @@ VideoDownloader/
         ├── Program.cs                       # Ponto de entrada (Main) da aplicação WinForms
         ├── Global.cs                        # Estado estático compartilhado (qualidades de vídeo)
         ├── Logger.cs                        # Adaptador para IProgress<int> e Label de status
+        ├── FFmpegHelper.cs                  # Utilitário: detecção no PATH/disco e download automático do FFmpeg
         │
         ├── Video.cs                         # Regra de negócio: Download de vídeos avulsos e multiplexação FFmpeg
         ├── Audio.cs                         # Regra de negócio: Download e conversão de áudio MP3 avulso
@@ -65,6 +67,10 @@ VideoDownloader/
         ├── TelaPrincipal.cs                 # Form inicial: Seleção entre Vídeos e Playlists
         ├── TelaPrincipal.Designer.cs        # Código gerado pelo WinForms Designer para TelaPrincipal
         ├── TelaPrincipal.resx               # Recursos da TelaPrincipal
+        │
+        ├── TelaDownloadFFmpeg.cs            # Form modal de progresso para o download automático do FFmpeg
+        ├── TelaDownloadFFmpeg.Designer.cs   # Layout e componentes de TelaDownloadFFmpeg
+        ├── TelaDownloadFFmpeg.resx          # Recursos de TelaDownloadFFmpeg
         │
         ├── TelaVideo.cs                     # Form para download de vídeo/áudio avulso
         ├── TelaVideo.Designer.cs            # Layout e componentes visuais de TelaVideo
