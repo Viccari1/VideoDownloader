@@ -103,84 +103,50 @@ VideoDownloader/
 
 ### 🔹 [Program.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Program.cs)
 - **Função:** Inicia o `Application.Run(new TelaPrincipal())`.
-- **Quando mexer:** Inicialização global de temas, manipulação de exceções não tratadas (`Application.ThreadException`, `AppDomain.CurrentDomain.UnhandledException`) ou splash screens.
+- **Quando mexer:** Inicialização global de temas, manipulação de exceções não tratadas (`Application.ThreadException`, `AppDomain.CurrentDomain.UnhandledException`).
 
-### 🔹 [Global.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Global.cs)
-- **Campos:**
-  - `List<string> qualidades`: Armazena os rótulos de resolução descobertos do vídeo (ex: "1080p", "720p", "480p").
-  - `string qualidadeDefinida`: Armazena a resolução escolhida na `TelaQualidade`.
-- **Quando mexer:** Se for substituir o padrão de variáveis estáticas por injeção ou parâmetros de construtor na abertura do formulário.
+### 🔹 [FileHelper.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/FileHelper.cs)
+- **Responsabilidade:** Centraliza regras de arquivos, sanitização de caracteres inválidos (`SanitizarNomeArquivo`), detecção de colisão de nomes com contadores incrementais `(1), (2)` (`ObterCaminhoDisponivel`) e garantia/criação das pastas de saída `[Minhas Vídeos]\Baixadas` e `[Minha Música]\Baixadas`.
+- **Quando mexer:** Modificar pastas padrão de download ou regras de caracteres especiais.
+
+### 🔹 [FFmpegHelper.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/FFmpegHelper.cs)
+- **Responsabilidade:** Detecção dinâmica do FFmpeg (no diretório local e no PATH do sistema), download automático resiliente da versão mais recente via GitHub Releases, extração do ZIP e orquestração assíncrona de comandos sem deadlocks de pipe buffer:
+  - `MesclarAudioVideoAsync(videoTemp, audioTemp, destinoMp4)`: multiplexa streams de áudio e vídeo com `-c:v copy -c:a aac -b:a 192k`.
+  - `ConverterParaMp3Async(tempAudio, destinoMp3)`: converte o fluxo para MP3 a 320 kbps com `-c:a libmp3lame -b:a 320k`.
+- **Quando mexer:** Atualizar parâmetros de codificação de áudio/vídeo ou fontes de download do FFmpeg.
+
+### 🔹 [ThumbnailHelper.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/ThumbnailHelper.cs)
+- **Responsabilidade:** Download seguro de thumbnails com fallback em cascata para endpoints canônicos JPEG do YouTube (`maxresdefault`, `sddefault`, `hqdefault`, `mqdefault`), cópia desvinculada de stream para prevenir falhas de renderização no Windows GDI+ e geração de placeholders dinâmicos.
+- **Quando mexer:** Ajustar tamanhos, dimensões ou estilos dos placeholders de thumbnail.
+
+### 🔹 [YoutubeHelper.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/YoutubeHelper.cs) e [YoutubeErrorHelper.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/YoutubeErrorHelper.cs)
+- **Responsabilidade:** `YoutubeHelper` fornece a instância thread-safe única `Client` para reutilização do pool de conexões HTTP do .NET. `YoutubeErrorHelper` centraliza a formatação amigável de erros (Erro 403 / Forbidden, restrições regionais/idade e links inválidos).
 
 ### 🔹 [Logger.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Logger.cs)
-- **Responsabilidade:** Atualizar a barra de progresso (`ProgressBar` via `IProgress<int>`) e o texto descritivo do status (`Label`).
-- **Métodos:**
-  - `Log(int value, string text)`: Atualiza porcentagem e mensagem simultaneamente.
-- **Quando mexer:** Para formatar porcentagens, adicionar logs em arquivo, ou desacoplar o controle do Windows Forms.
+- **Responsabilidade:** Atualizar a barra de progresso (`ProgressBar` via `IProgress<int>`) e o texto descritivo do status (`Label`) de forma unificada e thread-safe.
 
 ### 🔹 [Video.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Video.cs)
-- **Responsabilidade:** Orquestra a extração e mesclagem de streams para vídeos avulsos.
-- **Métodos principais:**
-  - `VerifyVideoOK()`: Verifica se a URL do vídeo é válida via `youtube.Videos.GetAsync`.
-  - `ExistFile()`: Garante nome único para o arquivo gerado dentro de `[Minhas Vídeos]\Baixadas` no formato `arquivo{N}.mp4`.
-  - `GetStreams(StreamManifest manifest)`: Seleciona o melhor áudio e o stream de vídeo correspondente à qualidade selecionada.
-  - `GetQuality()`: Retorna lista de resoluções disponíveis para o vídeo.
-  - `Download(Logger logger)`: Faz o download de ambos os streams temporários (`Path.GetTempPath()`) e invoca `ffmpeg.exe` via `ProcessStartInfo` com argumentos `-i "videoPath" -i "audioPath" -c:v copy -c:a aac "arquivo"`. Limpa os temporários ao final.
-- **Quando mexer:** Ajuste nos comandos FFmpeg, mudança no nome padrão salvo (usar o título real do vídeo em vez de "arquivo"), escolha de codecs ou formatos de contêiner (ex: MKV, WebM).
+- **Responsabilidade:** Download de vídeos avulsos, descoberta de qualidades com cálculo de peso estimado (`ObterDetalhesAsync`) e mesclagem assíncrona via FFmpeg com o título original sanitizado.
 
 ### 🔹 [Audio.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Audio.cs)
-- **Responsabilidade:** Download e conversão para MP3 de áudio avulso.
-- **Métodos principais:**
-  - `VerifyVideoOK()`: Checagem de integridade da URL do vídeo.
-  - `ExistFile()`: Gera caminho único em `[Minha Música]\Baixadas\arquivo{N}.mp3`.
-  - `GetStreamAudio(StreamManifest manifest)`: Identifica melhor stream de áudio por bitrate.
-  - `Download(Logger logger)`: Utiliza o utilitário nativo do `YoutubeExplode.Converter` (`youtube.Videos.DownloadAsync(url, arquivo, o => o.SetContainer("mp3").SetPreset(ConversionPreset.Fast).SetFFmpegPath(ffmpegPath))`).
-- **Quando mexer:** Alterar formato (FLAC, WAV, M4A), qualidade do preset de conversão, ou salvar com o nome do vídeo original.
+- **Responsabilidade:** Download do stream nativo de áudio do YouTube e conversão direta para MP3 a 320 kbps com o título original sanitizado.
 
 ### 🔹 [Playlist.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Playlist.cs)
-- **Responsabilidade:** Gerenciamento do download de playlists inteiras.
-- **Métodos principais:**
-  - `VerifyPlaylistOK()`: Valida existência da playlist.
-  - `CreateDirVideo(string dir)` / `CreateDirAudio(string dir)`: Cria diretório sanitizado com o nome da playlist.
-  - `RemoveInvalidChars(string nome)`: Substitui caracteres ilegais para nomes de arquivo do Windows por `_`.
-  - `DownloadVideos(Logger logger)`: Itera sobre todos os vídeos da playlist, baixa vídeo + áudio e mescla usando FFmpeg.
-  - `DownloadAudios(Logger logger)`: Itera sobre todos os vídeos e faz download/conversão para MP3.
-- **Quando mexer:** Tratamento de vídeos indisponíveis/privados no meio da playlist, paralelização de downloads, ou customização de nomes de arquivo.
+- **Responsabilidade:** Obtenção de metadados da playlist (`ObterDetalhesPlaylistAsync`) e download em lote resiliente de vídeos ou áudios MP3 para subpastas dedicadas dentro de `Baixadas`.
 
 ### 🔹 [TelaPrincipal.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPrincipal.cs)
-- **Responsabilidade:** Roteador da aplicação. Oculta a si mesma e abre `TelaVideo` ou `TelaPlaylist`. Ao fechar os formulários filhos, reaparece via evento `TelaFormClosed`.
+- **Responsabilidade:** Menu inicial com verificação automática da disponibilidade do FFmpeg e navegação para download de vídeos avulsos ou playlists.
 
-### 🔹 [TelaVideo.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaVideo.cs)
-- **Controles principais:** `text_link`, `rb_video`, `rb_audio`, `bar_progresso`, `label_status`, `btn_baixar`, `btn_voltar`, `btn_pasta_video`, `btn_pasta_audio`.
-- **Eventos:**
-  - `btn_baixar_Click`: Trava interface (`emUso = true`), extrai qualidades se for vídeo, abre modal `TelaQualidade`, instancia `Video` ou `Audio` e inicia o download assíncrono. Ao terminar, pergunta ao usuário via `MessageBox` se deseja abrir a pasta e seleciona o arquivo via `explorer.exe /select`.
-  - `btn_pasta_video_Click` / `btn_pasta_audio_Click`: Abre as respectivas pastas no Windows Explorer.
-
-### 🔹 [TelaPlaylist.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPlaylist.cs)
-- **Controles principais:** Semelhante a `TelaVideo`, mas possui `panel3` com `rb_alta` para alternar entre qualidade alta ou baixa (360p) nas playlists.
-- **Eventos:**
-  - `btn_baixar_Click`: Executa `downloader.DownloadVideos(logger)` ou `downloader.DownloadAudios(logger)`.
-
-### 🔹 [TelaQualidade.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaQualidade.cs)
-- **Controles:** `comboBox1` e `button1`.
-- **Eventos:** Preenche a ComboBox a partir de `Global.qualidades` e salva a opção selecionada em `Global.qualidadeDefinida`.
+### 🔹 [TelaVideo.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaVideo.cs) e [TelaPlaylist.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/TelaPlaylist.cs)
+- **Responsabilidade:** Dashboards interativos Single-Screen com preview imediato de thumbnail, título, canal, duração, seleção de formato e resolução com pesos estimados, atalho com Enter e botões de atalho para as pastas de saída.
 
 ---
 
-## ⚠️ 5. Pontos Críticos e Cuidados Técnicos
+## ⚙️ 5. Boas Práticas e Recomendações Técnicas
 
-1. **Dependência do FFmpeg:**
-   - O código busca `ffmpeg.exe` através de:
-     ```csharp
-     Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe")
-     ```
-   - O executável **deve** estar copiado no diretório de compilação de saída (`bin/Debug/` ou `bin/Release/`). Sem ele, o download de vídeo e a conversão de áudio falham.
-
-2. **Validações Assíncronas sem Await:**
-   - Em `Video.cs`, `Audio.cs` e `Playlist.cs`, o método `TryFindVideo()` / `TryFindPlaylist()` chama `youtube.Videos.GetAsync(url)` sem `await` e sem `.GetAwaiter().GetResult()`.
-   - *Atenção ao alterar:* Se for refatorar validação, torne esses métodos explicitamente assíncronos (`async Task<bool>`) para evitar possíveis race conditions ou exceções não capturadas.
-
-3. **Nomenclatura Padrão de Arquivos:**
-   - Atualmente, `Video.cs` e `Audio.cs` salvam arquivos usando o prefixo estático `"arquivo"` (`arquivo.mp4`, `arquivo1.mp4`), ignorando o título real do vídeo do YouTube. Caso seja solicitado salvar com o nome do vídeo, altere o método `ExistFile()` em [Video.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Video.cs) e [Audio.cs](file:///E:/Arquivos/Projetos/VideoDownloader/src/VideoDownloader/Audio.cs). Em `Playlist.cs`, o título do vídeo já é utilizado.
-
-4. **Variáveis Estáticas Globais:**
-   - A comunicação de resolução entre `TelaVideo` e `TelaQualidade` depende de `Global.qualidades` e `Global.qualidadeDefinida`. Cuidado com concorrência ou valores residuais entre downloads subsequentes.
+1. **Garantia do FFmpeg:**
+   - O aplicativo gerencia automaticamente a presença do FFmpeg via `FFmpegHelper.GarantirFFmpeg()`. Caso não esteja instalado, a modal `TelaDownloadFFmpeg` faz o download sem intervenção manual do usuário.
+2. **Execução de Processos Externos:**
+   - Sempre utilize `FFmpegHelper.ExecutarFFmpegAsync` para novos comandos do FFmpeg a fim de garantir que `StandardError` seja lido continuamente, prevenindo deadlocks de buffer de pipes no Windows.
+3. **Reúso de Streams e Cache:**
+   - As classes `Video` e `Playlist` possuem campos de cache (`_cachedVideo`, `_cachedManifest`, `_cachedPlaylist`). Ao analisar o link, os dados ficam em memória e o clique posterior em "Baixar" inicia o download instantaneamente sem refazer as consultas de rede.
