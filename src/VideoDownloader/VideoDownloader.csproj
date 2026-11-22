@@ -137,6 +137,7 @@
       <DependentUpon>TelaVideo.cs</DependentUpon>
     </Compile>
     <Compile Include="Video.cs" />
+    <Compile Include="VideoDetails.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>

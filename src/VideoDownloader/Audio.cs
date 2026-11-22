@@ -10,17 +10,42 @@ namespace VideoDownloader
     internal class Audio : IDownloader
     {
         public string arquivo { get; private set; }
-        string url;
-        YoutubeClient youtube;
-        string ffmpegPath = FFmpegHelper.GetFFmpegPath();
+        private readonly string url;
+        private readonly YoutubeClient youtube;
+        private readonly string ffmpegPath = FFmpegHelper.GetFFmpegPath();
+
+        // Cache para evitar requisições duplicadas
+        private YoutubeExplode.Videos.Video _cachedVideo;
 
         public Audio(string url)
         {
             this.url = url;
-            youtube = new YoutubeClient();
+            this.youtube = new YoutubeClient();
         }
 
-        private string RemoveInvalidChars(string nome)
+        private static string TratarErroYoutube(Exception ex)
+        {
+            string erroCompleto = ex.ToString();
+            if (erroCompleto.Contains("403") || erroCompleto.Contains("Forbidden"))
+            {
+                return "Erro 403 (Acesso Negado pelo YouTube):\n\n" +
+                       "O YouTube restringiu temporariamente o acesso a este stream de áudio.\n" +
+                       "Possíveis causas:\n" +
+                       "• Restrição de direitos autorais ou restrição de idade;\n" +
+                       "• Bloqueio regional de exibição;\n" +
+                       "• Excesso temporário de requisições do seu IP.\n\n" +
+                       "Aguarde alguns minutos ou tente outro vídeo.";
+            }
+
+            if (ex is ArgumentException)
+            {
+                return "A URL informada é inválida. Verifique o link e tente novamente.";
+            }
+
+            return ex.Message;
+        }
+
+        private static string RemoveInvalidChars(string nome)
         {
             foreach (char c in Path.GetInvalidFileNameChars())
             {
@@ -33,16 +58,15 @@ namespace VideoDownloader
         {
             try
             {
-                var video = await youtube.Videos.GetAsync(url);
-                return (true, $"Vídeo encontrado: {video.Title}");
-            }
-            catch (ArgumentException)
-            {
-                return (false, "Link inválido, verifique se a URL está correta!");
+                if (_cachedVideo == null)
+                {
+                    _cachedVideo = await youtube.Videos.GetAsync(url);
+                }
+                return (true, $"Vídeo encontrado: {_cachedVideo.Title}");
             }
             catch (Exception ex)
             {
-                return (false, $"Vídeo indisponível ou não encontrado: {ex.Message}");
+                return (false, TratarErroYoutube(ex));
             }
         }
 
@@ -51,7 +75,7 @@ namespace VideoDownloader
             return VerifyVideoOKAsync().GetAwaiter().GetResult();
         }
 
-        private string ExistFile(string tituloAudio)
+        private static string ExistFile(string tituloAudio)
         {
             string pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas");
             if (!Directory.Exists(pasta))
@@ -76,31 +100,36 @@ namespace VideoDownloader
             }
         }
 
-        private IStreamInfo GetStreamAudio(StreamManifest manifest)
-        {
-            return manifest.GetAudioOnlyStreams().GetWithHighestBitrate();
-        }
-
         public async Task Download(Logger logger)
         {
-            logger.Log(30, "Buscando dados do áudio...");
-            var video = await youtube.Videos.GetAsync(url);
-            var manifest = await youtube.Videos.Streams.GetManifestAsync(url);
-            arquivo = ExistFile(video.Title);
-            var audioStream = GetStreamAudio(manifest);
-            logger.Log(60, $"Baixando áudio: {Path.GetFileName(arquivo)}...");
-
             try
             {
+                logger.Log(10, "Buscando dados do áudio...");
+                if (_cachedVideo == null)
+                {
+                    _cachedVideo = await youtube.Videos.GetAsync(url);
+                }
+
+                arquivo = ExistFile(_cachedVideo.Title);
+                logger.Log(15, $"Preparando arquivo: {Path.GetFileName(arquivo)}");
+
+                var progress = new Progress<double>(p =>
+                {
+                    int percent = 15 + (int)(p * 80);
+                    logger.Log(percent, $"Baixando e convertendo áudio: {p:P0}...");
+                });
+
                 await youtube.Videos.DownloadAsync(url, arquivo, o => o
-                                         .SetContainer("mp3")
-                                         .SetPreset(ConversionPreset.Fast)
-                                         .SetFFmpegPath(ffmpegPath));
-                logger.Log(100, "Audio baixado!");
+                    .SetContainer("mp3")
+                    .SetPreset(ConversionPreset.Fast)
+                    .SetFFmpegPath(ffmpegPath),
+                    progress);
+
+                logger.Log(100, "Áudio baixado com sucesso!");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                throw new Exception("Erro ao baixar áudio.");
+                throw new InvalidOperationException(TratarErroYoutube(ex), ex);
             }
         }
     }

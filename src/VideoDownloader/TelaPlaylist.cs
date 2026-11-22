@@ -36,7 +36,13 @@ namespace VideoDownloader
         {
             if (emUso)
             {
-                MessageBox.Show("O processo ainda não terminou!");
+                MessageBox.Show("O processo ainda não terminou!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(text_link.Text))
+            {
+                MessageBox.Show("Por favor, insira o link da playlist do YouTube.", "Atenção", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -51,16 +57,15 @@ namespace VideoDownloader
             }
 
             emUso = true;
-
             Playlist downloader = new Playlist(text_link.Text);
-            Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = value), label_status);
+            Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = Math.Max(0, Math.Min(100, value))), label_status);
+
             try
             {
                 var (valido, mensagemValidacao) = await downloader.VerifyPlaylistOKAsync();
                 if (!valido)
                 {
                     MessageBox.Show(mensagemValidacao, "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    emUso = false;
                     return;
                 }
 
@@ -73,7 +78,13 @@ namespace VideoDownloader
                 {
                     await downloader.DownloadAudios(logger);
                 }
-                var resultado = MessageBox.Show("Download concluído! Deseja abrir a pasta onde o arquivo foi baixado?", "Sucesso", MessageBoxButtons.YesNo);
+
+                var resultado = MessageBox.Show(
+                    "Download da playlist concluído com sucesso!\n\nDeseja abrir a pasta onde os arquivos foram salvos?",
+                    "Sucesso",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Information);
+
                 if (resultado == DialogResult.Yes)
                 {
                     string arg = "/select, \"" + downloader.fullDir + "\"";
@@ -82,18 +93,21 @@ namespace VideoDownloader
             }
             catch (ArgumentException)
             {
-                MessageBox.Show("Link inválido, verifique se o link está correto!", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Link inválido, verifique se a URL da playlist está correta!", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (InvalidOperationException err)
             {
-                MessageBox.Show(err.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(err.Message, "Erro no Download", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception err)
             {
-                MessageBox.Show(err.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Ocorreu um erro durante o download:\n\n" + err.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            logger.Log(0, "Status: Inativo");
-            emUso = false;
+            finally
+            {
+                logger.Log(0, "Status: Inativo");
+                emUso = false;
+            }
         }
 
         private void btn_voltar_Click(object sender, EventArgs e)

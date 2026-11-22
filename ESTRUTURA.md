@@ -62,6 +62,7 @@ VideoDownloader/
         ├── FFmpegHelper.cs                  # Utilitário: detecção no PATH/disco e download automático do FFmpeg
         │
         ├── Video.cs                         # Regra de negócio: Download de vídeos avulsos e multiplexação FFmpeg
+        ├── VideoDetails.cs                  # Modelo de dados: metadados do vídeo, thumbnail, duração e peso por qualidade
         ├── Audio.cs                         # Regra de negócio: Download e conversão de áudio MP3 avulso
         ├── Playlist.cs                      # Regra de negócio: Download em lote de vídeos e áudios de playlists
         │

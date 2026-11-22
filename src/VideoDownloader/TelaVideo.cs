@@ -36,7 +36,13 @@ namespace VideoDownloader
         {
             if (emUso)
             {
-                MessageBox.Show("O processo ainda não terminou!");
+                MessageBox.Show("O processo de download ainda está em andamento!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(text_link.Text))
+            {
+                MessageBox.Show("Por favor, insira a URL do vídeo do YouTube.", "Atenção", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 
@@ -51,46 +57,58 @@ namespace VideoDownloader
             }
 
             emUso = true;
+            Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = Math.Max(0, Math.Min(100, value))), label_status);
 
-            IDownloader downloader;
-            Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = value), label_status);
-            if (rb_video.Checked)
-            {
-                var videoDownloader = new Video(text_link.Text);
-                List<string> qualidades = await videoDownloader.GetQuality();
-                Global.qualidades.Clear();
-
-                for (int i = 0; i < qualidades.Count; i++)
-                {
-                    Global.qualidades.Add(qualidades[i]);
-                }
-                TelaQualidade tela = new TelaQualidade();
-                tela.ShowDialog();
-                if (Global.qualidadeDefinida == null)
-                {
-                    emUso = false;
-                    MessageBox.Show("Selecione uma qualidade!", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-                videoDownloader.qualidade = Global.qualidadeDefinida;
-                downloader = videoDownloader;
-            }
-            else
-            {
-                downloader = new Audio(text_link.Text);
-            }
             try
             {
-                var (valido, mensagemValidacao) = await downloader.VerifyVideoOKAsync();
-                if (!valido)
+                IDownloader downloader;
+
+                if (rb_video.Checked)
                 {
-                    MessageBox.Show(mensagemValidacao, "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    emUso = false;
-                    return;
+                    logger.Log(5, "Carregando detalhes do vídeo e qualidades...");
+                    var videoDownloader = new Video(text_link.Text);
+
+                    // Obtém detalhes, thumbnail, duração e peso estimado por resolução
+                    var detalhes = await videoDownloader.ObterDetalhesAsync();
+
+                    using (var tela = new TelaQualidade(detalhes))
+                    {
+                        if (tela.ShowDialog(this) != DialogResult.OK || tela.QualidadeSelecionada == null)
+                        {
+                            logger.Log(0, "Status: Inativo");
+                            return;
+                        }
+
+                        videoDownloader.qualidade = tela.QualidadeSelecionada.Label;
+                    }
+
+                    downloader = videoDownloader;
+                }
+                else
+                {
+                    logger.Log(5, "Verificando link de áudio...");
+                    var audioDownloader = new Audio(text_link.Text);
+
+                    var (valido, mensagemValidacao) = await audioDownloader.VerifyVideoOKAsync();
+                    if (!valido)
+                    {
+                        MessageBox.Show(mensagemValidacao, "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        logger.Log(0, "Status: Inativo");
+                        return;
+                    }
+
+                    downloader = audioDownloader;
                 }
 
+                // Inicia o download com progresso contínuo
                 await downloader.Download(logger);
-                var resultado = MessageBox.Show("Download concluído! Deseja abrir a pasta onde o arquivo foi baixado?", "Sucesso", MessageBoxButtons.YesNo);
+
+                var resultado = MessageBox.Show(
+                    "Download concluído com sucesso!\n\nDeseja abrir a pasta onde o arquivo foi baixado?",
+                    "Sucesso",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Information);
+
                 if (resultado == DialogResult.Yes)
                 {
                     string arg = "/select, \"" + downloader.arquivo + "\"";
@@ -99,18 +117,21 @@ namespace VideoDownloader
             }
             catch (ArgumentException)
             {
-                MessageBox.Show("Link inválido, verifique se o link está correto!", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Link inválido, verifique se a URL informada está correta!", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (InvalidOperationException err)
             {
-                MessageBox.Show(err.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show(err.Message, "Erro no Processamento", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
             catch (Exception err)
             {
-                MessageBox.Show(err.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Ocorreu um erro durante o download:\n\n" + err.Message, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            logger.Log(0, "Status: Inativo");
-            emUso = false;
+            finally
+            {
+                logger.Log(0, "Status: Inativo");
+                emUso = false;
+            }
         }
 
         private void btn_voltar_Click(object sender, EventArgs e)

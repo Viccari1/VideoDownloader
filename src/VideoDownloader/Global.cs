@@ -8,7 +8,7 @@ namespace VideoDownloader
 {
     internal class Global
     {
-        public static List<String> qualidades = new List<String>();
-        public static string qualidadeDefinida;
+        public static List<string> qualidades { get; set; } = new List<string>();
+        public static string qualidadeDefinida { get; set; }
     }
 }
