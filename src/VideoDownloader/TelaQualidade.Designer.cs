@@ -40,7 +40,7 @@
             // 
             // pic_thumb
             // 
-            this.pic_thumb.BackColor = System.Drawing.Color.Black;
+            this.pic_thumb.BackColor = System.Drawing.Color.FromArgb(((byte)(31)), ((byte)(31)), ((byte)(35)));
             this.pic_thumb.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.pic_thumb.Location = new System.Drawing.Point(16, 12);
             this.pic_thumb.Name = "pic_thumb";
@@ -51,17 +51,19 @@
             // 
             // lbl_titulo
             // 
-            this.lbl_titulo.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.5F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbl_titulo.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbl_titulo.ForeColor = System.Drawing.Color.FromArgb(((byte)(244)), ((byte)(244)), ((byte)(245)));
             this.lbl_titulo.Location = new System.Drawing.Point(16, 228);
             this.lbl_titulo.Name = "lbl_titulo";
-            this.lbl_titulo.Size = new System.Drawing.Size(370, 36);
+            this.lbl_titulo.Size = new System.Drawing.Size(370, 40);
             this.lbl_titulo.TabIndex = 1;
-            this.lbl_titulo.Text = "Título do Vídeo";
+            this.lbl_titulo.Text = "Carregando título do vídeo...";
             // 
             // lbl_info
             // 
-            this.lbl_info.ForeColor = System.Drawing.Color.DimGray;
-            this.lbl_info.Location = new System.Drawing.Point(16, 268);
+            this.lbl_info.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbl_info.ForeColor = System.Drawing.Color.FromArgb(((byte)(161)), ((byte)(161)), ((byte)(170)));
+            this.lbl_info.Location = new System.Drawing.Point(16, 270);
             this.lbl_info.Name = "lbl_info";
             this.lbl_info.Size = new System.Drawing.Size(370, 20);
             this.lbl_info.TabIndex = 2;
@@ -70,50 +72,69 @@
             // lbl_instrucao
             // 
             this.lbl_instrucao.AutoSize = true;
-            this.lbl_instrucao.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbl_instrucao.Font = new System.Drawing.Font("Segoe UI Semibold", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.lbl_instrucao.ForeColor = System.Drawing.Color.FromArgb(((byte)(228)), ((byte)(228)), ((byte)(231)));
             this.lbl_instrucao.Location = new System.Drawing.Point(16, 298);
             this.lbl_instrucao.Name = "lbl_instrucao";
-            this.lbl_instrucao.Size = new System.Drawing.Size(263, 13);
+            this.lbl_instrucao.Size = new System.Drawing.Size(252, 15);
             this.lbl_instrucao.TabIndex = 3;
             this.lbl_instrucao.Text = "Selecione a resolução desejada (com peso):";
             // 
             // cb_qualidades
             // 
+            this.cb_qualidades.BackColor = System.Drawing.Color.FromArgb(((byte)(39)), ((byte)(39)), ((byte)(42)));
             this.cb_qualidades.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cb_qualidades.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.cb_qualidades.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.cb_qualidades.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.cb_qualidades.ForeColor = System.Drawing.Color.FromArgb(((byte)(244)), ((byte)(244)), ((byte)(245)));
             this.cb_qualidades.FormattingEnabled = true;
-            this.cb_qualidades.Location = new System.Drawing.Point(16, 317);
+            this.cb_qualidades.Location = new System.Drawing.Point(16, 318);
             this.cb_qualidades.Name = "cb_qualidades";
-            this.cb_qualidades.Size = new System.Drawing.Size(370, 23);
+            this.cb_qualidades.Size = new System.Drawing.Size(370, 25);
             this.cb_qualidades.TabIndex = 4;
             // 
             // btn_confirmar
             // 
-            this.btn_confirmar.BackColor = System.Drawing.SystemColors.ControlLight;
-            this.btn_confirmar.Font = new System.Drawing.Font("Microsoft Sans Serif", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btn_confirmar.Location = new System.Drawing.Point(16, 355);
+            this.btn_confirmar.BackColor = System.Drawing.Color.FromArgb(((byte)(225)), ((byte)(29)), ((byte)(72)));
+            this.btn_confirmar.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btn_confirmar.FlatAppearance.BorderSize = 0;
+            this.btn_confirmar.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((byte)(190)), ((byte)(18)), ((byte)(60)));
+            this.btn_confirmar.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((byte)(244)), ((byte)(63)), ((byte)(94)));
+            this.btn_confirmar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_confirmar.Font = new System.Drawing.Font("Segoe UI", 9.5F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btn_confirmar.ForeColor = System.Drawing.Color.White;
+            this.btn_confirmar.Location = new System.Drawing.Point(16, 356);
             this.btn_confirmar.Name = "btn_confirmar";
-            this.btn_confirmar.Size = new System.Drawing.Size(250, 36);
+            this.btn_confirmar.Size = new System.Drawing.Size(255, 38);
             this.btn_confirmar.TabIndex = 5;
-            this.btn_confirmar.Text = "Baixar nesta qualidade";
-            this.btn_confirmar.UseVisualStyleBackColor = true;
+            this.btn_confirmar.Text = "⬇️  BAIXAR NESTA QUALIDADE";
+            this.btn_confirmar.UseVisualStyleBackColor = false;
             this.btn_confirmar.Click += new System.EventHandler(this.btn_confirmar_Click);
             // 
             // btn_cancelar
             // 
-            this.btn_cancelar.Location = new System.Drawing.Point(276, 355);
+            this.btn_cancelar.BackColor = System.Drawing.Color.FromArgb(((byte)(39)), ((byte)(39)), ((byte)(42)));
+            this.btn_cancelar.Cursor = System.Windows.Forms.Cursors.Hand;
+            this.btn_cancelar.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((byte)(63)), ((byte)(63)), ((byte)(70)));
+            this.btn_cancelar.FlatAppearance.MouseDownBackColor = System.Drawing.Color.FromArgb(((byte)(63)), ((byte)(63)), ((byte)(70)));
+            this.btn_cancelar.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((byte)(63)), ((byte)(63)), ((byte)(70)));
+            this.btn_cancelar.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btn_cancelar.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btn_cancelar.ForeColor = System.Drawing.Color.FromArgb(((byte)(212)), ((byte)(212)), ((byte)(216)));
+            this.btn_cancelar.Location = new System.Drawing.Point(281, 356);
             this.btn_cancelar.Name = "btn_cancelar";
-            this.btn_cancelar.Size = new System.Drawing.Size(110, 36);
+            this.btn_cancelar.Size = new System.Drawing.Size(105, 38);
             this.btn_cancelar.TabIndex = 6;
             this.btn_cancelar.Text = "Cancelar";
-            this.btn_cancelar.UseVisualStyleBackColor = true;
+            this.btn_cancelar.UseVisualStyleBackColor = false;
             this.btn_cancelar.Click += new System.EventHandler(this.btn_cancelar_Click);
             // 
             // TelaQualidade
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(402, 405);
+            this.BackColor = System.Drawing.Color.FromArgb(((byte)(24)), ((byte)(24)), ((byte)(27)));
+            this.ClientSize = new System.Drawing.Size(402, 408);
             this.Controls.Add(this.btn_cancelar);
             this.Controls.Add(this.btn_confirmar);
             this.Controls.Add(this.cb_qualidades);
@@ -121,6 +142,7 @@
             this.Controls.Add(this.lbl_info);
             this.Controls.Add(this.lbl_titulo);
             this.Controls.Add(this.pic_thumb);
+            this.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;

@@ -23,10 +23,48 @@ namespace VideoDownloader
         public bool qualidadeAlta = false;
         public string fullDir;
 
+        private YoutubeExplode.Playlists.Playlist _cachedPlaylist;
+        private IReadOnlyList<YoutubeExplode.Playlists.PlaylistVideo> _cachedVideos;
+
         public Playlist(string url)
         {
             this.url = url;
             youtube = new YoutubeClient();
+        }
+
+        public async Task<PlaylistDetails> ObterDetalhesPlaylistAsync()
+        {
+            if (_cachedPlaylist == null)
+            {
+                _cachedPlaylist = await youtube.Playlists.GetAsync(url);
+            }
+            if (_cachedVideos == null)
+            {
+                _cachedVideos = await youtube.Playlists.GetVideosAsync(url);
+            }
+
+            string firstThumb = null;
+            string firstId = null;
+
+            if (_cachedVideos != null && _cachedVideos.Count > 0)
+            {
+                var primeiro = _cachedVideos[0];
+                firstId = primeiro.Id.Value;
+                firstThumb = primeiro.Thumbnails.GetWithHighestResolution().Url;
+            }
+            else if (_cachedPlaylist.Thumbnails != null && _cachedPlaylist.Thumbnails.Count > 0)
+            {
+                firstThumb = _cachedPlaylist.Thumbnails.GetWithHighestResolution().Url;
+            }
+
+            return new PlaylistDetails
+            {
+                Title = _cachedPlaylist.Title,
+                Author = _cachedPlaylist.Author?.ChannelTitle ?? "Desconhecido",
+                TotalVideos = _cachedVideos?.Count ?? 0,
+                ThumbnailUrl = firstThumb,
+                FirstVideoId = firstId
+            };
         }
 
         private string ExistFile(string basePath, string nome, string ext)
@@ -121,20 +159,27 @@ namespace VideoDownloader
         public async Task DownloadVideos(Logger logger)
         {
             logger.Log(5, "Buscando playlist...");
-            var playlist = await youtube.Playlists.GetAsync(url);
-            var videos = await youtube.Playlists.GetVideosAsync(url);
-            string tituloPlaylist = playlist.Title;
+            if (_cachedPlaylist == null)
+            {
+                _cachedPlaylist = await youtube.Playlists.GetAsync(url);
+            }
+            if (_cachedVideos == null)
+            {
+                _cachedVideos = await youtube.Playlists.GetVideosAsync(url);
+            }
+
+            string tituloPlaylist = _cachedPlaylist.Title;
             CreateDirVideo(tituloPlaylist);
 
             var destinoPasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas", pasta);
             this.fullDir = destinoPasta;
 
-            int total = videos.Count;
+            int total = _cachedVideos.Count;
             int i = 0;
             int baixados = 0;
             int falhas = 0;
 
-            foreach (var video in videos)
+            foreach (var video in _cachedVideos)
             {
                 i++;
                 int percentualBase = (int)(((double)i / total) * 100);
@@ -220,20 +265,27 @@ namespace VideoDownloader
         public async Task DownloadAudios(Logger logger)
         {
             logger.Log(5, "Buscando playlist...");
-            var playlist = await youtube.Playlists.GetAsync(url);
-            var videos = await youtube.Playlists.GetVideosAsync(url);
-            string tituloPlaylist = playlist.Title;
+            if (_cachedPlaylist == null)
+            {
+                _cachedPlaylist = await youtube.Playlists.GetAsync(url);
+            }
+            if (_cachedVideos == null)
+            {
+                _cachedVideos = await youtube.Playlists.GetVideosAsync(url);
+            }
+
+            string tituloPlaylist = _cachedPlaylist.Title;
             CreateDirAudio(tituloPlaylist);
 
             var destinoPasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas", pasta);
             this.fullDir = destinoPasta;
 
-            int total = videos.Count;
+            int total = _cachedVideos.Count;
             int i = 0;
             int baixados = 0;
             int falhas = 0;
 
-            foreach (var video in videos)
+            foreach (var video in _cachedVideos)
             {
                 i++;
                 int percentualBase = (int)(((double)i / total) * 100);

@@ -14,21 +14,151 @@ namespace VideoDownloader
     public partial class TelaVideo : Form
     {
         private bool emUso = false;
+        private VideoDetails _detalhes = null;
+        private Video _videoDownloader = null;
+        private string _lastLoadedUrl = null;
+
         public TelaVideo()
         {
             InitializeComponent();
             CreateDirEssential();
+            this.Shown += TelaVideo_Shown;
+        }
+
+        private void TelaVideo_Shown(object sender, EventArgs e)
+        {
+            pic_thumb.Image?.Dispose();
+            pic_thumb.Image = ThumbnailHelper.CriarPlaceholder(pic_thumb.Width, pic_thumb.Height, "Aguardando URL do Vídeo");
         }
 
         private void CreateDirEssential()
         {
-            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas")))
+            string videoDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas");
+            if (!Directory.Exists(videoDir))
             {
-                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas"));
+                Directory.CreateDirectory(videoDir);
             }
-            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas")))
+
+            string musicDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas");
+            if (!Directory.Exists(musicDir))
             {
-                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas"));
+                Directory.CreateDirectory(musicDir);
+            }
+        }
+
+        private void text_link_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                btn_buscar.PerformClick();
+            }
+        }
+
+        private async void btn_buscar_Click(object sender, EventArgs e)
+        {
+            await BuscarDetalhesAsync(silencioso: false);
+        }
+
+        private async Task<bool> BuscarDetalhesAsync(bool silencioso)
+        {
+            string url = text_link.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                if (!silencioso)
+                {
+                    MessageBox.Show("Por favor, insira a URL do vídeo do YouTube para buscar as informações.", "Atenção", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                return false;
+            }
+
+            btn_buscar.Enabled = false;
+            label_status.Text = "Status: Analisando link e buscando qualidades disponíveis...";
+            bar_progresso.Value = 25;
+
+            try
+            {
+                _videoDownloader = new Video(url);
+                _detalhes = await _videoDownloader.ObterDetalhesAsync();
+
+                if (_detalhes == null)
+                {
+                    label_status.Text = "Status: Não foi possível obter os detalhes do vídeo.";
+                    bar_progresso.Value = 0;
+                    return false;
+                }
+
+                _lastLoadedUrl = url;
+
+                // Atualiza dados na tela
+                lbl_titulo.Text = _detalhes.Title ?? "Vídeo do YouTube";
+                lbl_canal.Text = $"Canal: {_detalhes.Author ?? "Desconhecido"}";
+                lbl_duracao.Text = $"Duração: {_detalhes.GetFormattedDuration()}";
+
+                // Atualiza ComboBox de qualidades
+                cb_qualidades.Items.Clear();
+                foreach (var q in _detalhes.Qualities)
+                {
+                    cb_qualidades.Items.Add(q);
+                }
+
+                if (cb_qualidades.Items.Count > 0)
+                {
+                    cb_qualidades.SelectedIndex = 0;
+                }
+
+                bar_progresso.Value = 65;
+                label_status.Text = "Status: Carregando capa em alta definição...";
+
+                // Carrega thumbnail segura
+                var thumb = await ThumbnailHelper.CarregarThumbnailAsync(_detalhes.VideoId, _detalhes.ThumbnailUrl);
+                if (thumb != null)
+                {
+                    pic_thumb.Image?.Dispose();
+                    pic_thumb.Image = thumb;
+                }
+
+                bar_progresso.Value = 100;
+                label_status.Text = "Status: Vídeo carregado com sucesso! Escolha o formato e clique em Iniciar Download.";
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                label_status.Text = "Status: Link inválido.";
+                bar_progresso.Value = 0;
+                if (!silencioso)
+                {
+                    MessageBox.Show("A URL fornecida não é válida para um vídeo do YouTube.", "Link Inválido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                label_status.Text = "Status: Erro ao carregar informações.";
+                bar_progresso.Value = 0;
+                if (!silencioso)
+                {
+                    MessageBox.Show("Não foi possível carregar as informações do vídeo:\n\n" + ex.Message, "Erro na Busca", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                return false;
+            }
+            finally
+            {
+                btn_buscar.Enabled = true;
+            }
+        }
+
+        private void rb_formato_CheckedChanged(object sender, EventArgs e)
+        {
+            if (rb_audio.Checked)
+            {
+                cb_qualidades.Enabled = false;
+                label_qualidade.Text = "Formato de Áudio: MP3 320kbps (Alta Fidelidade)";
+            }
+            else
+            {
+                cb_qualidades.Enabled = true;
+                label_qualidade.Text = "Qualidade / Tamanho Estimado:";
             }
         }
 
@@ -36,11 +166,12 @@ namespace VideoDownloader
         {
             if (emUso)
             {
-                MessageBox.Show("O processo de download ainda está em andamento!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("O processo de download já está em andamento!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(text_link.Text))
+            string url = text_link.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(url))
             {
                 MessageBox.Show("Por favor, insira a URL do vídeo do YouTube.", "Atenção", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -56,7 +187,17 @@ namespace VideoDownloader
                 }
             }
 
+            // Se ainda não buscou detalhes ou a URL foi alterada no campo
+            if (_detalhes == null || _lastLoadedUrl != url)
+            {
+                bool buscou = await BuscarDetalhesAsync(silencioso: false);
+                if (!buscou) return;
+            }
+
             emUso = true;
+            btn_baixar.Enabled = false;
+            btn_buscar.Enabled = false;
+
             Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = Math.Max(0, Math.Min(100, value))), label_status);
 
             try
@@ -65,34 +206,20 @@ namespace VideoDownloader
 
                 if (rb_video.Checked)
                 {
-                    logger.Log(5, "Carregando detalhes do vídeo e qualidades...");
-                    var videoDownloader = new Video(text_link.Text);
+                    var opt = cb_qualidades.SelectedItem as QualityOption;
+                    string qualidadeEscolhida = opt?.Label ?? (_detalhes?.Qualities.FirstOrDefault()?.Label ?? "1080p");
 
-                    // Obtém detalhes, thumbnail, duração e peso estimado por resolução
-                    var detalhes = await videoDownloader.ObterDetalhesAsync();
-
-                    using (var tela = new TelaQualidade(detalhes))
-                    {
-                        if (tela.ShowDialog(this) != DialogResult.OK || tela.QualidadeSelecionada == null)
-                        {
-                            logger.Log(0, "Status: Inativo");
-                            return;
-                        }
-
-                        videoDownloader.qualidade = tela.QualidadeSelecionada.Label;
-                    }
-
-                    downloader = videoDownloader;
+                    _videoDownloader.qualidade = qualidadeEscolhida;
+                    downloader = _videoDownloader;
                 }
                 else
                 {
-                    logger.Log(5, "Verificando link de áudio...");
-                    var audioDownloader = new Audio(text_link.Text);
-
-                    var (valido, mensagemValidacao) = await audioDownloader.VerifyVideoOKAsync();
+                    logger.Log(5, "Verificando áudio...");
+                    var audioDownloader = new Audio(url);
+                    var (valido, msg) = await audioDownloader.VerifyVideoOKAsync();
                     if (!valido)
                     {
-                        MessageBox.Show(mensagemValidacao, "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show(msg, "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         logger.Log(0, "Status: Inativo");
                         return;
                     }
@@ -100,11 +227,10 @@ namespace VideoDownloader
                     downloader = audioDownloader;
                 }
 
-                // Inicia o download com progresso contínuo
                 await downloader.Download(logger);
 
                 var resultado = MessageBox.Show(
-                    "Download concluído com sucesso!\n\nDeseja abrir a pasta onde o arquivo foi baixado?",
+                    "Download concluído com sucesso!\n\nDeseja abrir a pasta onde o arquivo foi salvo?",
                     "Sucesso",
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Information);
@@ -129,8 +255,10 @@ namespace VideoDownloader
             }
             finally
             {
-                logger.Log(0, "Status: Inativo");
+                logger.Log(0, "Status: Pronto para novo download");
                 emUso = false;
+                btn_baixar.Enabled = true;
+                btn_buscar.Enabled = true;
             }
         }
 

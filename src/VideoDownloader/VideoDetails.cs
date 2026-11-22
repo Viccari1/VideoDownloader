@@ -50,4 +50,13 @@ namespace VideoDownloader
             return $"{kb:F0} KB";
         }
     }
+
+    public class PlaylistDetails
+    {
+        public string Title { get; set; }
+        public string Author { get; set; }
+        public int TotalVideos { get; set; }
+        public string ThumbnailUrl { get; set; }
+        public string FirstVideoId { get; set; }
+    }
 }

@@ -14,21 +14,139 @@ namespace VideoDownloader
     public partial class TelaPlaylist : Form
     {
         private bool emUso = false;
+        private PlaylistDetails _detalhes = null;
+        private Playlist _downloader = null;
+        private string _lastLoadedUrl = null;
+
         public TelaPlaylist()
         {
             InitializeComponent();
             CreateDirEssential();
+            this.Shown += TelaPlaylist_Shown;
+        }
+
+        private void TelaPlaylist_Shown(object sender, EventArgs e)
+        {
+            pic_thumb.Image?.Dispose();
+            pic_thumb.Image = ThumbnailHelper.CriarPlaceholder(pic_thumb.Width, pic_thumb.Height, "Aguardando URL da Playlist");
         }
 
         private void CreateDirEssential()
         {
-            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas")))
+            string videoDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas");
+            if (!Directory.Exists(videoDir))
             {
-                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas"));
+                Directory.CreateDirectory(videoDir);
             }
-            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas")))
+
+            string musicDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas");
+            if (!Directory.Exists(musicDir))
             {
-                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas"));
+                Directory.CreateDirectory(musicDir);
+            }
+        }
+
+        private void text_link_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Enter)
+            {
+                e.SuppressKeyPress = true;
+                btn_buscar.PerformClick();
+            }
+        }
+
+        private async void btn_buscar_Click(object sender, EventArgs e)
+        {
+            await BuscarDetalhesPlaylistAsync(silencioso: false);
+        }
+
+        private async Task<bool> BuscarDetalhesPlaylistAsync(bool silencioso)
+        {
+            string url = text_link.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                if (!silencioso)
+                {
+                    MessageBox.Show("Por favor, insira o link da playlist do YouTube para buscar as informações.", "Atenção", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                return false;
+            }
+
+            btn_buscar.Enabled = false;
+            label_status.Text = "Status: Analisando link e buscando vídeos da playlist...";
+            bar_progresso.Value = 25;
+
+            try
+            {
+                _downloader = new Playlist(url);
+                _detalhes = await _downloader.ObterDetalhesPlaylistAsync();
+
+                if (_detalhes == null)
+                {
+                    label_status.Text = "Status: Não foi possível obter os dados da playlist.";
+                    bar_progresso.Value = 0;
+                    return false;
+                }
+
+                _lastLoadedUrl = url;
+
+                // Atualiza textos
+                lbl_titulo.Text = _detalhes.Title ?? "Playlist do YouTube";
+                lbl_canal.Text = $"Criador: {_detalhes.Author ?? "Desconhecido"}";
+                lbl_total_videos.Text = $"Total de Vídeos: {_detalhes.TotalVideos}";
+
+                bar_progresso.Value = 65;
+                label_status.Text = "Status: Carregando capa da playlist...";
+
+                // Carrega capa / thumbnail
+                var thumb = await ThumbnailHelper.CarregarThumbnailAsync(_detalhes.FirstVideoId, _detalhes.ThumbnailUrl);
+                if (thumb != null)
+                {
+                    pic_thumb.Image?.Dispose();
+                    pic_thumb.Image = thumb;
+                }
+
+                bar_progresso.Value = 100;
+                label_status.Text = $"Status: Playlist carregada! ({_detalhes.TotalVideos} vídeos disponíveis). Clique em Baixar.";
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                label_status.Text = "Status: Link de playlist inválido.";
+                bar_progresso.Value = 0;
+                if (!silencioso)
+                {
+                    MessageBox.Show("A URL fornecida não é um link válido de playlist do YouTube.", "Link Inválido", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                return false;
+            }
+            catch (Exception ex)
+            {
+                label_status.Text = "Status: Erro ao carregar playlist.";
+                bar_progresso.Value = 0;
+                if (!silencioso)
+                {
+                    MessageBox.Show("Não foi possível carregar as informações da playlist:\n\n" + ex.Message, "Erro na Busca", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                return false;
+            }
+            finally
+            {
+                btn_buscar.Enabled = true;
+            }
+        }
+
+        private void rb_formato_CheckedChanged(object sender, EventArgs e)
+        {
+            if (rb_audio.Checked)
+            {
+                panel_resolucao.Enabled = false;
+                label_resolucao.Text = "Formato de Áudio: MP3 320kbps (Alta Fidelidade)";
+            }
+            else
+            {
+                panel_resolucao.Enabled = true;
+                label_resolucao.Text = "Qualidade dos Vídeos:";
             }
         }
 
@@ -36,11 +154,12 @@ namespace VideoDownloader
         {
             if (emUso)
             {
-                MessageBox.Show("O processo ainda não terminou!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("O processo de download já está em andamento!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(text_link.Text))
+            string url = text_link.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(url))
             {
                 MessageBox.Show("Por favor, insira o link da playlist do YouTube.", "Atenção", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -56,27 +175,29 @@ namespace VideoDownloader
                 }
             }
 
+            // Se ainda não buscou detalhes ou a URL foi alterada
+            if (_detalhes == null || _lastLoadedUrl != url)
+            {
+                bool buscou = await BuscarDetalhesPlaylistAsync(silencioso: false);
+                if (!buscou) return;
+            }
+
             emUso = true;
-            Playlist downloader = new Playlist(text_link.Text);
+            btn_baixar.Enabled = false;
+            btn_buscar.Enabled = false;
+
             Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = Math.Max(0, Math.Min(100, value))), label_status);
 
             try
             {
-                var (valido, mensagemValidacao) = await downloader.VerifyPlaylistOKAsync();
-                if (!valido)
-                {
-                    MessageBox.Show(mensagemValidacao, "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
                 if (rb_video.Checked)
                 {
-                    downloader.qualidadeAlta = rb_alta.Checked;
-                    await downloader.DownloadVideos(logger);
+                    _downloader.qualidadeAlta = rb_alta.Checked;
+                    await _downloader.DownloadVideos(logger);
                 }
                 else
                 {
-                    await downloader.DownloadAudios(logger);
+                    await _downloader.DownloadAudios(logger);
                 }
 
                 var resultado = MessageBox.Show(
@@ -85,9 +206,9 @@ namespace VideoDownloader
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Information);
 
-                if (resultado == DialogResult.Yes)
+                if (resultado == DialogResult.Yes && !string.IsNullOrEmpty(_downloader.fullDir))
                 {
-                    string arg = "/select, \"" + downloader.fullDir + "\"";
+                    string arg = "/select, \"" + _downloader.fullDir + "\"";
                     System.Diagnostics.Process.Start("explorer.exe", arg);
                 }
             }
@@ -105,8 +226,10 @@ namespace VideoDownloader
             }
             finally
             {
-                logger.Log(0, "Status: Inativo");
+                logger.Log(0, "Status: Pronto para novo download");
                 emUso = false;
+                btn_baixar.Enabled = true;
+                btn_buscar.Enabled = true;
             }
         }
 
@@ -125,14 +248,6 @@ namespace VideoDownloader
         {
             var arg = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyMusic), "Baixadas");
             System.Diagnostics.Process.Start("explorer.exe", arg);
-        }
-
-        private void rb_video_CheckedChanged(object sender, EventArgs e)
-        {
-            if (rb_video.Checked)
-                panel3.Visible = true;
-            else
-                panel3.Visible = false;
         }
     }
 }

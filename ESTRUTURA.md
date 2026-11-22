@@ -60,6 +60,7 @@ VideoDownloader/
         ├── IDownloader.cs                   # Interface comum para Downloaders (Video e Audio)
         ├── Logger.cs                        # Adaptador para IProgress<int> e Label de status
         ├── FFmpegHelper.cs                  # Utilitário: detecção no PATH/disco e download automático do FFmpeg
+        ├── ThumbnailHelper.cs               # Utilitário: carregamento assíncrono e seguro de capas GDI+ com placeholders
         │
         ├── Video.cs                         # Regra de negócio: Download de vídeos avulsos e multiplexação FFmpeg
         ├── VideoDetails.cs                  # Modelo de dados: metadados do vídeo, thumbnail, duração e peso por qualidade
@@ -74,12 +75,12 @@ VideoDownloader/
         ├── TelaDownloadFFmpeg.Designer.cs   # Layout e componentes de TelaDownloadFFmpeg
         ├── TelaDownloadFFmpeg.resx          # Recursos de TelaDownloadFFmpeg
         │
-        ├── TelaVideo.cs                     # Form para download de vídeo/áudio avulso
-        ├── TelaVideo.Designer.cs            # Layout e componentes visuais de TelaVideo
+        ├── TelaVideo.cs                     # Dashboard interativo integrado para download de vídeo/áudio avulso com thumbnail
+        ├── TelaVideo.Designer.cs            # Layout e card de preview com thumbnail, canal, duração e pesos
         ├── TelaVideo.resx                   # Recursos da TelaVideo
         │
-        ├── TelaPlaylist.cs                  # Form para download de playlists completas
-        ├── TelaPlaylist.Designer.cs         # Layout e componentes visuais de TelaPlaylist
+        ├── TelaPlaylist.cs                  # Dashboard interativo integrado para playlists com capa, total de vídeos e resoluções
+        ├── TelaPlaylist.Designer.cs         # Layout e card de preview da playlist
         ├── TelaPlaylist.resx                # Recursos da TelaPlaylist
         │
         ├── TelaQualidade.cs                 # Form modal/dialog para seleção da resolução do vídeo
