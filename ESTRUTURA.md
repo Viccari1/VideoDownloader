@@ -57,6 +57,7 @@ VideoDownloader/
         │
         ├── Program.cs                       # Ponto de entrada (Main) da aplicação WinForms
         ├── Global.cs                        # Estado estático compartilhado (qualidades de vídeo)
+        ├── IDownloader.cs                   # Interface comum para Downloaders (Video e Audio)
         ├── Logger.cs                        # Adaptador para IProgress<int> e Label de status
         ├── FFmpegHelper.cs                  # Utilitário: detecção no PATH/disco e download automático do FFmpeg
         │

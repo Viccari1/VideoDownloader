@@ -14,10 +14,9 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace VideoDownloader
 {
-    internal class Video
+    internal class Video : IDownloader
     {
-        string NOME = "arquivo";
-        public string arquivo;
+        public string arquivo { get; private set; }
         string url;
         public string qualidade { get; set; }
         YoutubeClient youtube;
@@ -28,45 +27,60 @@ namespace VideoDownloader
             this.url = url;
             youtube = new YoutubeClient();
         }
-        private bool TryFindVideo()
+
+        private string RemoveInvalidChars(string nome)
+        {
+            foreach (char c in Path.GetInvalidFileNameChars())
+            {
+                nome = nome.Replace(c, '_');
+            }
+            return string.IsNullOrWhiteSpace(nome) ? "video" : nome.Trim();
+        }
+
+        public async Task<(bool, string)> VerifyVideoOKAsync()
         {
             try
             {
-                youtube.Videos.GetAsync(url);
-                return true;
+                var video = await youtube.Videos.GetAsync(url);
+                return (true, $"Vídeo encontrado: {video.Title}");
             }
             catch (ArgumentException)
             {
-                return false;
+                return (false, "Link inválido, verifique se a URL está correta!");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Vídeo indisponível ou não encontrado: {ex.Message}");
             }
         }
+
         public (bool, string) VerifyVideoOK()
         {
-            if (TryFindVideo())
-            {
-                return (true, "Video encontrado");
-            }
-            else
-            {
-                return (false, "Video não encontrado, verifique se o link está correto!");
-            }
+            return VerifyVideoOKAsync().GetAwaiter().GetResult();
         }
-        private string ExistFile()
+
+        private string ExistFile(string tituloVideo)
         {
-            string path = "";
+            string pasta = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas");
+            if (!Directory.Exists(pasta))
+            {
+                Directory.CreateDirectory(pasta);
+            }
+
+            string nomeLimpo = RemoveInvalidChars(tituloVideo);
+            string nomeFinal = nomeLimpo;
             int i = 1;
-            string nome = NOME;
+
             while (true)
             {
-                path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "Baixadas\\" + nome + ".mp4");
-
-                if (File.Exists(path) == false)
-                    return path;
-                else
+                string path = Path.Combine(pasta, nomeFinal + ".mp4");
+                if (!File.Exists(path))
                 {
-                    nome = NOME + Convert.ToString(i);
-                    i++;
+                    return path;
                 }
+
+                nomeFinal = $"{nomeLimpo} ({i})";
+                i++;
             }
         }
 
@@ -97,11 +111,11 @@ namespace VideoDownloader
 
         public async Task Download(Logger logger)
         {
-            logger.Log(20, "Iniciando download...");
+            logger.Log(20, "Obtendo dados do vídeo...");
             var video = await youtube.Videos.GetAsync(url);
             var manifest = await youtube.Videos.Streams.GetManifestAsync(url);
-            arquivo = ExistFile();
-            logger.Log(40, "Verificando se arquivo existe...");
+            arquivo = ExistFile(video.Title);
+            logger.Log(40, $"Preparando arquivo: {Path.GetFileName(arquivo)}...");
 
             // a verificação de qualidade vai aqui =====================
 

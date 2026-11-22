@@ -52,12 +52,12 @@ namespace VideoDownloader
 
             emUso = true;
 
-            dynamic downloader;
+            IDownloader downloader;
             Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = value), label_status);
             if (rb_video.Checked)
             {
-                downloader = new Video(text_link.Text);
-                List<string> qualidades = await downloader.GetQuality();
+                var videoDownloader = new Video(text_link.Text);
+                List<string> qualidades = await videoDownloader.GetQuality();
                 Global.qualidades.Clear();
 
                 for (int i = 0; i < qualidades.Count; i++)
@@ -72,21 +72,23 @@ namespace VideoDownloader
                     MessageBox.Show("Selecione uma qualidade!", "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-                downloader.qualidade = Global.qualidadeDefinida;
+                videoDownloader.qualidade = Global.qualidadeDefinida;
+                downloader = videoDownloader;
             }
             else
             {
-                
                 downloader = new Audio(text_link.Text);
             }
             try
             {
-                if (downloader.VerifyVideoOK().Item1 == false)
+                var (valido, mensagemValidacao) = await downloader.VerifyVideoOKAsync();
+                if (!valido)
                 {
-                    MessageBox.Show(downloader.VerifyVideoOK().Item2, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(mensagemValidacao, "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    emUso = false;
                     return;
                 }
-                // downloader.VerifyVideoOK();
+
                 await downloader.Download(logger);
                 var resultado = MessageBox.Show("Download concluído! Deseja abrir a pasta onde o arquivo foi baixado?", "Sucesso", MessageBoxButtons.YesNo);
                 if (resultado == DialogResult.Yes)

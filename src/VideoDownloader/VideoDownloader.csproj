@@ -101,6 +101,7 @@
     <Compile Include="Audio.cs" />
     <Compile Include="FFmpegHelper.cs" />
     <Compile Include="Global.cs" />
+    <Compile Include="IDownloader.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Playlist.cs" />
     <Compile Include="TelaDownloadFFmpeg.cs">

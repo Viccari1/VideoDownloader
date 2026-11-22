@@ -56,12 +56,14 @@ namespace VideoDownloader
             Logger logger = new Logger(new Progress<int>(value => bar_progresso.Value = value), label_status);
             try
             {
-                if (downloader.VerifyPlaylistOK().Item1 == false)
+                var (valido, mensagemValidacao) = await downloader.VerifyPlaylistOKAsync();
+                if (!valido)
                 {
-                    MessageBox.Show(downloader.VerifyPlaylistOK().Item2, "Erro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(mensagemValidacao, "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    emUso = false;
                     return;
                 }
-                // downloader.VerifyVideoOK();
+
                 if (rb_video.Checked)
                 {
                     downloader.qualidadeAlta = rb_alta.Checked;
